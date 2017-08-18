@@ -9,19 +9,24 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.RealVectorChangingVisitor;
 import org.apache.commons.math3.util.FastMath;
 
+import dl.dataset.NNDataset;
+
 public class NNPlayer {
 
 	final static boolean in_debug = true;
-	final static double alpha = 0.8d;
-	final static double epi = 0.0001d;
+	static double alpha = 0.1d;
+	static double epi = 0.0001d;
 
 	public static void main(String[] args) {
-		NN inst = build(2, 3, 1);
-		inst.debugInfo(null, null, null);
-		XOR(inst);
+		// XOR();
+		Circle();
 	}
 
-	static void XOR(NN inst) {
+	static void XOR() {
+		alpha = 0.8d;
+		epi = 0.0001d;
+		NN inst = build(2, 3, 1);
+		inst.debugInfo(null, null, null);
 		RealVector[] data = NNDataset.getData(NNDataset.XOR);
 		RealVector[] target = NNDataset.getLabel(NNDataset.XOR);
 		training(inst, data, target);
@@ -30,6 +35,24 @@ public class NNPlayer {
 			RealVector r = predict(inst, data[i], false);
 			System.out.println(data[i] + " --> " + r);
 		}
+	}
+
+	static void Circle() {
+		alpha = 0.05d;
+		epi = 0.01d;
+		NN inst = build(10, 4, 4, 1);
+		RealVector[] data = NNDataset.getData(NNDataset.CIRCLE);
+		RealVector[] target = NNDataset.getLabel(NNDataset.CIRCLE);
+		training(inst, data, target);
+
+		for (int i = 0; i < data.length; i++) {
+			RealVector r = predict(inst, data[i], false);
+			System.out.println(data[i] + " --> " + r.mapMultiply(4).mapAdd(4));
+		}
+
+		RealVector d = MatrixUtils.createRealVector(new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0 });
+		RealVector r = predict(inst, d, false);
+		System.out.println(d + " --> " + r.mapMultiply(4).mapAdd(4));
 	}
 
 	static void training(NN inst, RealVector[] data, RealVector[] target) {
@@ -49,13 +72,15 @@ public class NNPlayer {
 				err += MSE(inst, d[0][0], target[i]);
 			}
 			err /= data.length;
-			if (loop % 10000 == 0){				
+			if (loop % 10000 == 0) {
 				System.out.println("MSE ---> " + err);
-				loop = 0;
 			}
-			loop ++;
+			loop++;
+			// if (loop > 100000) {
+			// break;
+			// }
 		}
-		boolean o = NN.in_debug ;
+		boolean o = NN.in_debug;
 		NN.in_debug = true;
 		inst.debugInfo(null, null, null);
 		NN.in_debug = o;
