@@ -12,7 +12,7 @@ import org.apache.commons.math3.util.FastMath;
 public class NNPlayer {
 
 	final static boolean in_debug = true;
-	final static double alpha = 0.1d;
+	final static double alpha = 0.8d;
 	final static double epi = 0.0001d;
 
 	public static void main(String[] args) {
@@ -34,13 +34,10 @@ public class NNPlayer {
 
 	static void training(NN inst, RealVector[] data, RealVector[] target) {
 		int sz = inst.neuralByLayer.length;
-		double last_err = 0d, err = 0d;
-		last_err += 1000 * epi;
+		double err = 10d;
 		List<RealVector[][]> trData = normData(sz, data);
 		int loop = 0;
-		while (Math.abs(last_err - err) > epi) {
-			last_err = err;
-			err = 0;
+		while (err > epi) {
 			RealVector[][] d;
 			for (int i = 0; i < data.length; i++) {
 				d = trData.get(i);
