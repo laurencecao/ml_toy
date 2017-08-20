@@ -20,6 +20,8 @@ public class SimpleRBM implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	static boolean SAVEIT = false;
+	static long period = 120; // 120s
+	static long ts = 0;
 
 	final static Random rng = new Random();
 	transient UncorrelatedRandomVectorGenerator rnd = null;
@@ -47,6 +49,10 @@ public class SimpleRBM implements Serializable {
 		if (!SAVEIT) {
 			return;
 		}
+		if (!(System.currentTimeMillis() - ts < period * 1000)) {
+			return;
+		}
+		ts = System.currentTimeMillis();
 		File f = new File(path);
 		if (f.exists()) {
 			FileUtils.copyFile(f, new File(f.getAbsolutePath() + ".bak"));

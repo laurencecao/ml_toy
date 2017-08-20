@@ -52,8 +52,9 @@ public class RBMPlayer {
 	}
 
 	static void rate() throws IOException {
-		alpha = 0.1d;
-		epi = 0.1;
+		SimpleRBM.SAVEIT = true;
+		alpha = 0.2d;
+		epi = 10;
 		RealVector[] data = NNDataset.getData(NNDataset.MOVIELENS);
 		System.out.println("dataset size = " + data.length);
 		for (int i = 0; i < 5; i++) {
