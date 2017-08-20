@@ -75,7 +75,7 @@ eclipse {
     }
 }
 
-mainClassName = "foosudoku2.order.GenOrder"
+mainClassName = "dl.rbm.RBMPlayer"
 task getHomeDir << {
 	println gradle.gradleHomeDir
 }
