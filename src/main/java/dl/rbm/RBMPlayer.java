@@ -1,5 +1,6 @@
 package dl.rbm;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,16 +19,19 @@ import dl.dataset.NNDataset;
 
 public class RBMPlayer {
 
-	static double alpha = 0.01d;
-	static double epi = 0.0001d;
+	final static String MODEL_PATH = "tmp/rate_rbm_%s.model";
+	static double alpha = 0.1d;
+	static double epi = 0.01d;
 	static UniformRandomGenerator urg = new UniformRandomGenerator(new JDKRandomGenerator());
 
-	public static void main(String[] args) {
-		// rate();
-		digital();
+	public static void main(String[] args) throws IOException {
+		// digital();
+		rate();
 	}
 
-	static void digital() {
+	static void digital() throws IOException {
+		alpha = 0.01d;
+		epi = 0.001d;
 		RealVector[] data = NNDataset.getData(NNDataset.DIGITAL);
 		System.out.println("dataset size = " + data.length);
 		for (int i = 0; i < 5; i++) {
@@ -36,8 +40,9 @@ public class RBMPlayer {
 		System.out.println("--------------- above is original ---------------------");
 		int v = data[0].getDimension();
 		SimpleRBM rbm = new SimpleRBM(v, 2);
+		rbm.K = 2;
 		rbm.rnd = new UncorrelatedRandomVectorGenerator(data.length, urg);
-		training(rbm, data);
+		training(rbm, data, 100000);
 		for (int i = 0; i < data.length; i++) {
 			RealVector[] p = predict(rbm, data[i]);
 			printDebugInfo(p, "" + i);
@@ -46,24 +51,31 @@ public class RBMPlayer {
 		printDebugInfo(p, "aabb");
 	}
 
-	static void rate() {
+	static void rate() throws IOException {
+		alpha = 0.1d;
+		epi = 0.1;
 		RealVector[] data = NNDataset.getData(NNDataset.MOVIELENS);
 		System.out.println("dataset size = " + data.length);
 		for (int i = 0; i < 5; i++) {
-			printData(data[i], i + 1);
+			printRate(data[i], "" + (i + 1));
 		}
 		System.out.println("--------------- above is original ---------------------");
 		int v = data[0].getDimension();
-		SimpleRBM rbm = new SimpleRBM(v, 200);
+		int h = 200;
+		SimpleRBM rbm = SimpleRBM.load(String.format(MODEL_PATH, h));
+		if (rbm == null) {
+			rbm = new SimpleRBM(v, h);
+			rbm.K = 2;
+		}
 		rbm.rnd = new UncorrelatedRandomVectorGenerator(data.length, urg);
-		training(rbm, data);
-		for (int i = 0; i < 2; i++) {
-			// RealVector p = predict(rbm, data[i]);
-			// printData(p, i + 1);
+		training(rbm, data, 1);
+		for (int i = 0; i < 10; i++) {
+			RealVector[] p = predict(rbm, data[i]);
+			printRate(p[p.length - 1], "" + (i + 1));
 		}
 	}
 
-	public static void training(SimpleRBM rbm, RealVector[] all_data) {
+	public static void training(SimpleRBM rbm, RealVector[] all_data, int debugLoop) throws IOException {
 		int v = all_data[0].getDimension();
 		int count = all_data.length;
 		RealMatrix data = MatrixUtils.createRealMatrix(v, count);
@@ -71,41 +83,27 @@ public class RBMPlayer {
 			data.setColumn(i, all_data[i].toArray());
 		}
 
-		long ts;
-		int K = 10;
-		double norm = 10;
+		long ts = System.currentTimeMillis();
+		double norm = epi * 10000;
+		double rate = alpha;
 		for (int i = 0; norm > epi; i++) {
-			ts = System.currentTimeMillis();
-			norm = CD_K(K, rbm, data);
-			ts = System.currentTimeMillis() - ts;
-			if (i % 1000 == 0) {
-				System.out.println("CD_" + K + " elapsed: " + ts + "ms; norm = " + norm);
+			norm = CD_K(rbm, data, rate);
+			if (i % debugLoop == 0) {
+				ts = System.currentTimeMillis() - ts;
+				System.out.println(
+						"CD_" + rbm.K + "[" + debugLoop + "], r = " + rate + " elapsed: " + ts + "ms; norm = " + norm);
+				// double r = rate;
+				// rate *= 0.99d;
+				// System.out.println("tuning learning rate " + r + " --> " +
+				// rate);
+				SimpleRBM.save(rbm, String.format(MODEL_PATH, rbm.hidden));
+				ts = System.currentTimeMillis();
 			}
 			if (norm < epi) {
 				break;
 			}
 		}
 		System.out.println("Last Norm: " + norm);
-	}
-
-	public static RealVector predict2(SimpleRBM rbm, RealVector d) {
-		RealMatrix data = MatrixUtils.createRealMatrix(d.getDimension(), 1);
-		data.setColumn(0, d.toArray());
-		RealMatrix data0 = addBiase(data);
-		RealMatrix data1 = data0.copy();
-		RealMatrix p0 = rbm.weights.multiply(data1);
-		p0.walkInOptimizedOrder(activation);
-
-		RealMatrix state = p0.copy();
-		state.walkInOptimizedOrder(setState);
-
-		state.getRowVector(0).set(1); // always biased = 1
-
-		// negative CD phase
-		RealMatrix p1 = rbm.weights.transpose().multiply(state);
-		p1.walkInOptimizedOrder(activation);
-		p1.walkInOptimizedOrder(setState);
-		return p1.getColumnVector(0).getSubVector(1, data1.getRowDimension() - 1);
 	}
 
 	public static RealVector[] predict(SimpleRBM rbm, RealVector d) {
@@ -131,13 +129,15 @@ public class RBMPlayer {
 				visible_state.getColumnVector(0).getSubVector(1, visible_state.getRowDimension() - 1) };
 	}
 
-	static double CD_K(int k, SimpleRBM rbm, RealMatrix data) {
+	static double CD_K(SimpleRBM rbm, RealMatrix data, double rate) {
 		RealMatrix data0 = addBiase(data);
 		RealMatrix data1 = data0.copy();
 
+		RealMatrix last_p = null;
 		int count = data0.getColumnDimension();
 		List<RealMatrix> delta = new ArrayList<RealMatrix>();
-		for (int i = 0; i < k; i++) {
+		for (int i = 0; i < rbm.K; i++) {
+			// positive CD phase
 			RealMatrix p0 = rbm.weights.multiply(data1);
 			p0.walkInOptimizedOrder(activation);
 
@@ -152,36 +152,28 @@ public class RBMPlayer {
 			// negative CD phase
 			RealMatrix p1 = rbm.weights.transpose().multiply(state);
 			p1.walkInOptimizedOrder(activation);
-			p1.walkInOptimizedOrder(setState);
-			p1.walkInRowOrder(setBit, 0, 0, 0, p1.getColumnDimension() - 1);
-			data1 = p1;
+			last_p = p1;
+			data1 = p1.copy();
+			data1.walkInOptimizedOrder(setState);
+			data1.walkInRowOrder(setBit, 0, 0, 0, p1.getColumnDimension() - 1);
 		}
 
-		RealMatrix p = rbm.weights.multiply(data1);
+		RealMatrix p = rbm.weights.multiply(last_p);
 		p.walkInOptimizedOrder(activation);
-		delta.add(p.multiply(data1.transpose())); // add E(h|v)
+		delta.add(p.multiply(last_p.transpose())); // add E(h|v)
 
 		RealMatrix asso_0 = delta.get(0);
 		RealMatrix asso_n = delta.get(delta.size() - 1);
-		RealMatrix dw = asso_n.subtract(asso_0);
-		rbm.weights = rbm.weights.subtract(dw.scalarMultiply(alpha / count));
+		RealMatrix dw = asso_n.subtract(asso_0).scalarMultiply(rate / count);
+		rbm.weights = rbm.weights.subtract(dw);
 
-		return data0.subtract(data1).getNorm();
+		return data0.subtract(last_p).getNorm();
 	}
 
 	static RealMatrix addBiase(RealMatrix d) {
 		RealMatrix ret = d.createMatrix(d.getRowDimension() + 1, d.getColumnDimension());
 		ret.walkInRowOrder(setBit, 0, 0, 0, ret.getColumnDimension() - 1);
 		ret.setSubMatrix(d.getData(), 1, 0);
-		return ret;
-	}
-
-	static RealMatrix randMatrix(UncorrelatedRandomVectorGenerator rnd, int r, int c) {
-		RealMatrix ret = MatrixUtils.createRealMatrix(r, c);
-		for (int j = 0; j < r; j++) {
-			RealVector s = MatrixUtils.createRealVector(rnd.nextVector());
-			ret.setRow(j, s.toArray());
-		}
 		return ret;
 	}
 
@@ -205,10 +197,10 @@ public class RBMPlayer {
 		System.out.println(sb.toString());
 	}
 
-	static void printData(RealVector v, int id) {
+	static void printRate(RealVector v, String name) {
 		double[] vv = v.toArray();
 		StringBuilder sb = new StringBuilder();
-		sb.append("user[").append(id).append("]: {   ");
+		sb.append("user[").append(name).append("]: {   ");
 		for (int i = 0; i < vv.length; i++) {
 			if (vv[i] != 0) {
 				sb.append(MovieLens.dictionary.get(i)).append(", ");

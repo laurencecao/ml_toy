@@ -66,9 +66,6 @@ public class MovieLens {
 		for (int i = 0; i < items.size(); i++) {
 			Integer[] item = items.get(i);
 			r.setEntry(item[0] - 1, item[1], 1d);
-//			double[] row = r.getRow(item[0] - 1);
-			// row[item[1] - 1] = 0.1d * item[2];
-//			row[item[1]] = 1d;
 		}
 	}
 
