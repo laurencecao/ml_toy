@@ -22,7 +22,7 @@ import dl.opt.DLParameter;
 
 public class RBMPlayer {
 
-	final static String MODEL_PATH = "tmp/rate_rbm_%s.model";
+	final static String MODEL_PATH = "/tmp/rate_rbm_%s.model";
 	static double alpha = 0.1d;
 	static double epi = 0.01d;
 	static int dbgLoop = 100000;
