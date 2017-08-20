@@ -14,24 +14,44 @@ import org.apache.commons.math3.random.UncorrelatedRandomVectorGenerator;
 import org.apache.commons.math3.random.UniformRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 
+import com.beust.jcommander.JCommander;
+
 import dl.dataset.MovieLens;
 import dl.dataset.NNDataset;
+import dl.opt.DLParameter;
 
 public class RBMPlayer {
 
 	final static String MODEL_PATH = "tmp/rate_rbm_%s.model";
 	static double alpha = 0.1d;
 	static double epi = 0.01d;
+	static int dbgLoop = 100000;
+	static int K = 2;
+	static int H = 100;
 	static UniformRandomGenerator urg = new UniformRandomGenerator(new JDKRandomGenerator());
 
 	public static void main(String[] args) throws IOException {
-		// digital();
-		rate();
+		DLParameter param = new DLParameter();
+		JCommander.newBuilder().addObject(param).build().parse(args);
+		
+		alpha = param.rate;
+		epi = param.err;
+		dbgLoop = param.debug;
+		K = param.k;
+		H = param.hidden;
+		
+		if (param.name.equalsIgnoreCase("digital")) {
+			digital();
+		}
+		if (param.name.equalsIgnoreCase("rate")) {
+			rate();
+		}
 	}
 
 	static void digital() throws IOException {
-		alpha = 0.01d;
-		epi = 0.001d;
+//		alpha = 0.01d;
+//		epi = 0.001d;
+		SimpleRBM.SAVEIT = false;
 		RealVector[] data = NNDataset.getData(NNDataset.DIGITAL);
 		System.out.println("dataset size = " + data.length);
 		for (int i = 0; i < 5; i++) {
@@ -39,10 +59,10 @@ public class RBMPlayer {
 		}
 		System.out.println("--------------- above is original ---------------------");
 		int v = data[0].getDimension();
-		SimpleRBM rbm = new SimpleRBM(v, 2);
-		rbm.K = 2;
+		SimpleRBM rbm = new SimpleRBM(v, H);
+		rbm.K = K;
 		rbm.rnd = new UncorrelatedRandomVectorGenerator(data.length, urg);
-		training(rbm, data, 100000);
+		training(rbm, data, dbgLoop);
 		for (int i = 0; i < data.length; i++) {
 			RealVector[] p = predict(rbm, data[i]);
 			printDebugInfo(p, "" + i);
@@ -53,8 +73,8 @@ public class RBMPlayer {
 
 	static void rate() throws IOException {
 		SimpleRBM.SAVEIT = true;
-		alpha = 0.2d;
-		epi = 10;
+		// alpha = 0.2d;
+		// epi = 10;
 		RealVector[] data = NNDataset.getData(NNDataset.MOVIELENS);
 		System.out.println("dataset size = " + data.length);
 		for (int i = 0; i < 5; i++) {
@@ -62,11 +82,11 @@ public class RBMPlayer {
 		}
 		System.out.println("--------------- above is original ---------------------");
 		int v = data[0].getDimension();
-		int h = 200;
+		int h = H;
 		SimpleRBM rbm = SimpleRBM.load(String.format(MODEL_PATH, h));
 		if (rbm == null) {
 			rbm = new SimpleRBM(v, h);
-			rbm.K = 2;
+			rbm.K = K;
 		}
 		rbm.rnd = new UncorrelatedRandomVectorGenerator(data.length, urg);
 		training(rbm, data, 1);

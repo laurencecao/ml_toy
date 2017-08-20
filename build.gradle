@@ -30,6 +30,7 @@ dependencies {
 	compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.8.8'
 	compile group: 'commons-io', name: 'commons-io', version: '2.5'
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.6'
+	compile group: 'com.beust', name: 'jcommander', version: '1.72'
 	
 //	compile group: 'gov.nist.math', name: 'jama', version: '1.0.3'
 //    compile 'org.apache.tinkerpop:gremlin-core:3.2.4'
