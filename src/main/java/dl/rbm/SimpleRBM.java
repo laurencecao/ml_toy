@@ -20,7 +20,7 @@ public class SimpleRBM implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	static boolean SAVEIT = false;
-	static long period = 120; // 120s
+	static long period = 120000; // 120s
 	static long ts = 0;
 
 	final static Random rng = new Random();
@@ -49,7 +49,7 @@ public class SimpleRBM implements Serializable {
 		if (!SAVEIT) {
 			return;
 		}
-		if (!(System.currentTimeMillis() - ts < period * 1000)) {
+		if (!(System.currentTimeMillis() - ts > period)) {
 			return;
 		}
 		ts = System.currentTimeMillis();
