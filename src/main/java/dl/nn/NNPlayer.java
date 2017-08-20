@@ -18,8 +18,8 @@ public class NNPlayer {
 	static double epi = 0.0001d;
 
 	public static void main(String[] args) {
-		// XOR();
-		Circle();
+		XOR();
+		// Circle();
 	}
 
 	static void XOR() {

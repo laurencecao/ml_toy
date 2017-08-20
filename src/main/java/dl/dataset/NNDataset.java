@@ -10,6 +10,8 @@ public class NNDataset {
 
 	public final static String XOR = "XOR";
 	public final static String CIRCLE = "CIRCLE";
+	public final static String MOVIELENS = "MOVIELENS";
+	public final static String DIGITAL = "DIGITAL";
 
 	final static double[][] xor_inputs = new double[][] {
 
@@ -30,6 +32,20 @@ public class NNDataset {
 			ret = new RealVector[sz];
 			for (int i = 0; i < sz; i++) {
 				ret[i] = MatrixUtils.createRealVector(CircleRuleGame.getData(i));
+			}
+		}
+		if (StringUtils.equalsIgnoreCase(MOVIELENS, name)) {
+			int sz = MovieLens.rates.getRowDimension();
+			ret = new RealVector[sz];
+			for (int i = 0; i < sz; i++) {
+				ret[i] = MovieLens.rates.getRowVector(i);
+			}
+		}
+		if (StringUtils.equalsIgnoreCase(DIGITAL, name)) {
+			int sz = Digital.data.length;
+			ret = new RealVector[sz];
+			for (int i = 0; i < sz; i++) {
+				ret[i] = MatrixUtils.createRealVector(Digital.data[i]);
 			}
 		}
 		return ret;
