@@ -43,6 +43,9 @@ public class FnEstimator {
 		// using:
 		// = (avg0 * size + avg0 + new_x - avg0) / (size + 1)
 		// = avg0 + (new_x - avg0) / (size + 1)
+		/**
+		 * @See Moving Average
+		 */
 		for (long i = 0; i < SAMPLING_SIZE; i++) {
 			double x = ThreadLocalRandom.current().nextDouble(lower, upper);
 			ret = ret + (fn.apply(x) - ret) / (i + 1);
