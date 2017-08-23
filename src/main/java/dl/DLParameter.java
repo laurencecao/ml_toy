@@ -1,4 +1,4 @@
-package dl.opt;
+package dl;
 
 import com.beust.jcommander.Parameter;
 

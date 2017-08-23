@@ -18,10 +18,10 @@ import org.apache.commons.math3.util.FastMath;
 import com.beust.jcommander.JCommander;
 import com.google.common.collect.EvictingQueue;
 
-import dl.dataset.MovieLens;
-import dl.dataset.NNDataset;
-import dl.opt.DLParameter;
-import dl.util.DrawingUtils;
+import dataset.MovieLens;
+import dataset.NNDataset;
+import dl.DLParameter;
+import utils.DrawingUtils;
 
 public class RBMPlayer {
 

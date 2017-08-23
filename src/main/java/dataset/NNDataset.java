@@ -1,4 +1,4 @@
-package dl.dataset;
+package dataset;
 
 import java.util.Arrays;
 

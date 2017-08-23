@@ -4,15 +4,18 @@ import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
-import dl.dataset.NNDataset;
+import dataset.NNDataset;
 
-public class SimpleID3 {
+public class SimpleC45 {
 
 	public static void main(String[] args) {
-		playID3();
+		playC45();
 	}
 
-	static void playID3() {
+	/**
+	 * sigh! bullshit, maybe GA for tree constructor is better!
+	 */
+	static void playC45() {
 		RealVector[] data = NNDataset.getData(NNDataset.HOME);
 		RealVector[] label = NNDataset.getLabel(NNDataset.HOME);
 		RealMatrix d = MatrixUtils.createRealMatrix(data.length, data[0].getDimension() + 1);
@@ -21,11 +24,11 @@ public class SimpleID3 {
 			d.setSubMatrix(new double[][] { data[i].toArray() }, i, 1);
 		}
 		d = d.transpose(); // data = column vector
-		
+
 	}
 
 	static void pickAttr(int i) {
-		
+
 	}
 
 }

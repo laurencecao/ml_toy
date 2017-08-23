@@ -9,7 +9,7 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.RealVectorChangingVisitor;
 import org.apache.commons.math3.util.FastMath;
 
-import dl.dataset.NNDataset;
+import dataset.NNDataset;
 
 public class NNPlayer {
 

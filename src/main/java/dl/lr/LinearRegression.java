@@ -8,8 +8,8 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import com.google.common.collect.EvictingQueue;
 
-import dl.dataset.CircleRuleGame;
-import dl.util.DrawingUtils;
+import dataset.CircleRuleGame;
+import utils.DrawingUtils;
 
 public class LinearRegression {
 
