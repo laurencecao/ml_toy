@@ -1,16 +1,22 @@
 package dl.lr;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.commons.lang3.ArrayUtils;
+
+import com.google.common.collect.EvictingQueue;
+
 import dl.dataset.CircleRuleGame;
+import dl.util.DrawingUtils;
 
 public class LinearRegression {
 
 	final static double epi = 0.00000001d;
 	final static double alpha = 0.01;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		double[] w = training();
 		double r = 0d;
 		r = predict(CircleRuleGame.getQuestion(0), w);
@@ -19,13 +25,13 @@ public class LinearRegression {
 		System.out.println(Arrays.toString(CircleRuleGame.getQuestion(1)) + " ---> " + r);
 	}
 
-	static double[] training() {
+	static double[] training() throws IOException {
 		Random rnd = new Random();
 		double[] w = rnd.doubles(CircleRuleGame.getData(0).length + 1).toArray();
-		double last_err = 0d, err = 0d;
-		last_err += 1000 * epi;
-		while (Math.abs(last_err - err) > epi) {
-			last_err = err;
+		double err = 0d;
+		err += 1000 * epi;
+		EvictingQueue<Double> buf = EvictingQueue.create(100000);
+		while (err > epi) {
 			err = 0;
 			for (int i = 0; i < CircleRuleGame.count(); i++) {
 				w = SGD(CircleRuleGame.getLabel(i), CircleRuleGame.getData(i), w, alpha);
@@ -35,7 +41,11 @@ public class LinearRegression {
 			}
 			err /= CircleRuleGame.count();
 			System.out.println("MSE ---> " + err);
+			buf.add(err);
 		}
+		double[] error = ArrayUtils.toPrimitive(buf.toArray(new Double[buf.size()]));
+		int err_sz = error.length - 1;
+		DrawingUtils.drawMSE(ArrayUtils.subarray(error, 0, err_sz), error[err_sz], buf.size(), 1, "/tmp/lr_error.png");
 		return w;
 	}
 

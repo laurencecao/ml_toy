@@ -8,7 +8,7 @@ public class DLParameter {
 	public double err = 0.001d;
 
 	@Parameter(names = "-rate", description = "learning rate")
-	public double rate;
+	public double rate = 0.01;
 
 	@Parameter(names = "-debug", description = "Debug mode loop")
 	public int debug = 100000;

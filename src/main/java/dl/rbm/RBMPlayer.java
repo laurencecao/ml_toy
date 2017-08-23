@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealMatrixChangingVisitor;
@@ -15,10 +16,12 @@ import org.apache.commons.math3.random.UniformRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 
 import com.beust.jcommander.JCommander;
+import com.google.common.collect.EvictingQueue;
 
 import dl.dataset.MovieLens;
 import dl.dataset.NNDataset;
 import dl.opt.DLParameter;
+import dl.util.DrawingUtils;
 
 public class RBMPlayer {
 
@@ -33,13 +36,13 @@ public class RBMPlayer {
 	public static void main(String[] args) throws IOException {
 		DLParameter param = new DLParameter();
 		JCommander.newBuilder().addObject(param).build().parse(args);
-		
+
 		alpha = param.rate;
 		epi = param.err;
 		dbgLoop = param.debug;
 		K = param.k;
 		H = param.hidden;
-		
+
 		if (param.name.equalsIgnoreCase("digital")) {
 			digital();
 		}
@@ -49,8 +52,8 @@ public class RBMPlayer {
 	}
 
 	static void digital() throws IOException {
-//		alpha = 0.01d;
-//		epi = 0.001d;
+		// alpha = 0.01d;
+		// epi = 0.001d;
 		SimpleRBM.SAVEIT = false;
 		RealVector[] data = NNDataset.getData(NNDataset.DIGITAL);
 		System.out.println("dataset size = " + data.length);
@@ -107,7 +110,9 @@ public class RBMPlayer {
 		long ts = System.currentTimeMillis();
 		double norm = epi * 10000;
 		double rate = alpha;
-		for (int i = 0; norm > epi; i++) {
+		EvictingQueue<Double> buf = EvictingQueue.create(100000);
+		int i = 0;
+		for (i = 0; norm > epi; i++) {
 			norm = CD_K(rbm, data, rate);
 			if (i % debugLoop == 0) {
 				ts = System.currentTimeMillis() - ts;
@@ -118,12 +123,15 @@ public class RBMPlayer {
 				// System.out.println("tuning learning rate " + r + " --> " +
 				// rate);
 				SimpleRBM.save(rbm, String.format(MODEL_PATH, rbm.hidden));
+				buf.add(norm);
 				ts = System.currentTimeMillis();
 			}
 			if (norm < epi) {
 				break;
 			}
 		}
+		double[] err = ArrayUtils.toPrimitive(buf.toArray(new Double[buf.size()]));
+		DrawingUtils.drawMSE(err, norm, i - i / debugLoop, debugLoop, "/tmp/rbm_err.png");
 		System.out.println("Last Norm: " + norm);
 	}
 

@@ -12,6 +12,7 @@ public class NNDataset {
 	public final static String CIRCLE = "CIRCLE";
 	public final static String MOVIELENS = "MOVIELENS";
 	public final static String DIGITAL = "DIGITAL";
+	public final static String HOME = "HOME";
 
 	final static double[][] xor_inputs = new double[][] {
 
@@ -48,6 +49,9 @@ public class NNDataset {
 				ret[i] = MatrixUtils.createRealVector(Digital.data[i]);
 			}
 		}
+		if (StringUtils.equalsIgnoreCase(HOME, name)) {
+			ret = HomeLocation.getDate();
+		}
 		return ret;
 	}
 
@@ -66,6 +70,9 @@ public class NNDataset {
 				ret[i] = MatrixUtils.createRealVector(new double[] { CircleRuleGame.getLabel(i) });
 				ret[i].mapSubtractToSelf(4).mapDivideToSelf(4);
 			}
+		}
+		if (StringUtils.equalsIgnoreCase(HOME, name)) {
+			ret = HomeLocation.getLabel();
 		}
 		return ret;
 	}
