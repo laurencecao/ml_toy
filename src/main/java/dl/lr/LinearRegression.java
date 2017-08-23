@@ -44,8 +44,7 @@ public class LinearRegression {
 			buf.add(err);
 		}
 		double[] error = ArrayUtils.toPrimitive(buf.toArray(new Double[buf.size()]));
-		int err_sz = error.length - 1;
-		DrawingUtils.drawMSE(ArrayUtils.subarray(error, 0, err_sz), error[err_sz], buf.size(), 1, "/tmp/lr_error.png");
+		DrawingUtils.drawMSE(error, error.length, 1, "/tmp/lr_error.png");
 		return w;
 	}
 
