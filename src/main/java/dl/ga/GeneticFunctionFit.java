@@ -57,6 +57,7 @@ public class GeneticFunctionFit {
 		RealVector[] pop = generateSeeds(chromosome_sz, population_count);
 		int i = 0;
 		double error = 10d;
+		// we don't know error in real world
 		while (error > epi || i < epoch) {
 			pop = evolution(pop, mating, mutateProb);
 			double[] best = evaluationBest(pop);
