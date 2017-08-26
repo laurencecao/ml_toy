@@ -37,8 +37,8 @@ public class SimpleC45 {
 		}
 
 		DecisionNode root = training(d, l);
-		// String[] header = NNDataset.getHeader(NNDataset.HOME);
-		// printTree(root, header);
+		String[] header = NNDataset.getHeader(NNDataset.HOME);
+		printTree(root, header);
 
 		Integer lb = predict(root, data[0]);
 		System.out.println(lb);

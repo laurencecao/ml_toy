@@ -16,8 +16,8 @@ import org.knowm.xchart.QuickChart;
 import org.knowm.xchart.XYChart;
 
 import dl.dt.DecisionNode;
-import guru.nidi.graphviz.attribute.Color;
-import guru.nidi.graphviz.attribute.Shape;
+//import guru.nidi.graphviz.attribute.Color;
+//import guru.nidi.graphviz.attribute.Shape;
 import guru.nidi.graphviz.attribute.Style;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
@@ -91,11 +91,6 @@ public class DrawingUtils {
 		System.out.println(allNode.size());
 
 		Graph g = graph("C4.5 Decision Tree").directed().with(allNode.toArray(new Node[allNode.size()]));
-		// .with(node("main").link( Link.to(node("parse").link(execute)),
-		// Link.to(init),
-		// execute.link(graph(), Link.to(compare)),
-		// init.link(mkString));
-
 		Graphviz.fromGraph(g).width(3000).render(Format.PNG).toFile(new File("tmp/dt.png"));
 	}
 
