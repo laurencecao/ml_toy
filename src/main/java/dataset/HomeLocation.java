@@ -41,9 +41,13 @@ public class HomeLocation {
 	static RealVector[] getLabel() {
 		RealVector[] ret = new RealVector[label.length];
 		for (int i = 0; i < label.length; i++) {
-			ret[i] = MatrixUtils.createRealVector(label);
+			ret[i] = MatrixUtils.createRealVector(new double[] { label[i] });
 		}
 		return ret;
+	}
+
+	static String[] getHeader() {
+		return Arrays.copyOfRange(header, 1, header.length);
 	}
 
 	static List<double[]> init(String path) {

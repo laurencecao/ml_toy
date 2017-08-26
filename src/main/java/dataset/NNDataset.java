@@ -77,4 +77,12 @@ public class NNDataset {
 		return ret;
 	}
 
+	public static String[] getHeader(String name) {
+		String[] ret = null;
+		if (StringUtils.equalsIgnoreCase(HOME, name)) {
+			ret = HomeLocation.getHeader();
+		}
+		return ret;
+	}
+
 }
