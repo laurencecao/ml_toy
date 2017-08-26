@@ -25,7 +25,6 @@ public class SimpleC45 {
 	static void playC45() throws IOException {
 		RealVector[] data = NNDataset.getData(NNDataset.HOME);
 		RealVector[] label = NNDataset.getLabel(NNDataset.HOME);
-		String[] header = NNDataset.getHeader(NNDataset.HOME);
 		RealMatrix d = MatrixUtils.createRealMatrix(data.length, data[0].getDimension());
 		for (int i = 0; i < data.length; i++) {
 			d.setRowVector(i, data[i]);
@@ -38,6 +37,7 @@ public class SimpleC45 {
 		}
 
 		DecisionNode root = training(d, l);
+		// String[] header = NNDataset.getHeader(NNDataset.HOME);
 		// printTree(root, header);
 
 		Integer lb = predict(root, data[0]);

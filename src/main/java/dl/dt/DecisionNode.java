@@ -109,6 +109,7 @@ public class DecisionNode implements Comparable<DecisionNode> {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	public boolean calcAttrOptEn(Integer available, Control control) {
 		double[] d = this.example.getRow(available);
 		List<Attr> options = new ArrayList<Attr>();
