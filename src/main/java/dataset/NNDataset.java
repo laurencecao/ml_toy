@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 public class NNDataset {
@@ -13,6 +14,7 @@ public class NNDataset {
 	public final static String MOVIELENS = "MOVIELENS";
 	public final static String DIGITAL = "DIGITAL";
 	public final static String HOME = "HOME";
+	public final static String TSP = "TSP";
 
 	final static double[][] xor_inputs = new double[][] {
 
@@ -81,6 +83,14 @@ public class NNDataset {
 		String[] ret = null;
 		if (StringUtils.equalsIgnoreCase(HOME, name)) {
 			ret = HomeLocation.getHeader();
+		}
+		return ret;
+	}
+
+	public static RealMatrix getWeights(String name) {
+		RealMatrix ret = null;
+		if (StringUtils.equalsIgnoreCase(TSP, name)) {
+			ret = TSPCitys.cityCost;
 		}
 		return ret;
 	}
