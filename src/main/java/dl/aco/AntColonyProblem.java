@@ -11,6 +11,7 @@ import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealMatrixChangingVisitor;
+import org.apache.commons.math3.linear.RealMatrixFormat;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
 
@@ -22,16 +23,30 @@ public class AntColonyProblem {
 	final static int ANTS_COUNT = 300;
 	final static int debug = 10;
 
-	final static double evaporation = 0.2d;
-	final static double occurrent = 0.05d;
+	final static double evaporation = 0.7d;
+	final static double occurrent = 0.1d;
 	final static double alpha = 1d;
-	final static double beta = 5d;
-	final static double CONST_PHEROMONE = 500;
+	final static double beta = 6d;
+	final static double CONST_PHEROMONE = 1000d;
 
-	// CONST_PHEROMONE / ANTS_COUNT + 10 * Math.random();
-	final static double pheromone = Math.random();
+	final static double pheromone = 1d;// Math.random();
 
+	/**
+	 * <pre>
+	 * total cost = 705.0 ==> 
+	 *     17[0.0] --> 18[26.0] --> 19[22.0] --> 20[30.0] --> 21[21.0] --> 22[5.0] --> 23[29.0] 
+	 * --> 24[8.0] --> 25[11.0] --> 26[3.0] --> 27[20.0] --> 28[12.0] --> 32[29.0] --> 31[11.0] 
+	 * --> 29[15.0] --> 30[8.0] --> 33[14.0] --> 34[9.0] --> 35[18.0] --> 36[17.0] --> 37[12.0] 
+	 * --> 38[9.0] --> 39[6.0] --> 40[25.0] --> 0[3.0] --> 41[5.0] --> 1[12.0] --> 2[45.0] --> 3[9.0] 
+	 * --> 4[15.0] --> 5[17.0] --> 6[6.0] --> 7[10.0] --> 8[5.0] --> 9[20.0] --> 10[23.0] --> 11[11.0] 
+	 * --> 12[40.0] --> 13[35.0] --> 14[10.0] --> 15[27.0] --> 16[21.0] --> 17[31.0]
+	 * </pre>
+	 * 
+	 * @param args
+	 */
 	public static void main(String[] args) {
+		// https://people.sc.fsu.edu/~jburkardt/datasets/tsp/dantzig42_d.txt
+		// official declared minimal cost: 699
 		RealMatrix cost = NNDataset.getWeights(NNDataset.TSP);
 		List<Ant> history = new ArrayList<Ant>();
 		double best = train(cost, history);
@@ -79,7 +94,7 @@ public class AntColonyProblem {
 
 			// ant moving
 			for (Ant ant : ants) {
-				for (int j = 0; j < turn; j++) {
+				for (int j = 0; j <= turn; j++) {
 					ant.visitNext();
 				}
 			}
@@ -101,11 +116,13 @@ public class AntColonyProblem {
 			}
 		}
 
+		printPheromone(withPheromone);
+
 		return ret;
 	}
 
 	static void updatePheromone(RealMatrix withPheromone, Ant ant) {
-		final double contriubted = 1.0d / ant.cost;
+		final double contriubted = 1.0d * CONST_PHEROMONE / ant.cost;
 		final int[] path = ant.path;
 		RealMatrixChangingVisitor updator = new RealMatrixChangingVisitor() {
 			@Override
@@ -123,7 +140,7 @@ public class AntColonyProblem {
 				int from = path[row];
 				int to = path[column];
 				if (from + 1 == to) {
-					ret = evaporation * oldPheromone + (1 - evaporation) * contriubted;
+					ret = (1 - evaporation) * oldPheromone + evaporation * contriubted;
 				}
 				return ret;
 			}
@@ -151,10 +168,22 @@ public class AntColonyProblem {
 			total_cost += c;
 			sb.append(now).append("[").append(c).append("]").append(" --> ");
 		}
-		int sz = " --> ".length();
-		sb.delete(sb.length() - sz, sb.length());
+		double c = cost.getEntry(road.get(road.size() - 1).idx, road.get(0).idx);
+		sb.append(road.get(0).idx).append("[").append(c).append("]");
+		total_cost += c;
 		sb.insert(0, " ==> ").insert(0, total_cost).insert(0, "total cost = ");
 		System.out.println(sb.toString());
+	}
+
+	static void printPheromone(RealMatrix ph) {
+		RealMatrixFormat format = MatrixUtils.OCTAVE_FORMAT;
+		String ret = format.format(ph);
+		ret = ret.replaceAll("\\[", "");
+		ret = ret.replaceAll("\\]", "");
+		ret = ret.replaceAll("; ", "; \r\n");
+		System.out.println("-------------------Pheromone Matrix-----------------------------");
+		System.out.println(ret);
+		System.out.println("-------------------Pheromone Matrix-----------------------------");
 	}
 
 }
@@ -174,6 +203,7 @@ class Ant implements Comparable<Ant> {
 	int turn; // now turn at
 	int[] path; // node visited path, -1 is never
 	int currentPos; // now at node
+	int start;
 
 	Ant(RealMatrix wt, RealMatrix withPheromone, double occurrent, int start) {
 		this.pheromone = withPheromone;
@@ -187,10 +217,15 @@ class Ant implements Comparable<Ant> {
 		this.turn = 0;
 		this.currentPos = start;
 		this.path[currentPos] = turn;
+		this.start = start;
 	}
 
 	void visitNext() {
 		turn++;
+		if (turn >= pheromone.getRowDimension()) {
+			cost += this.weight.getEntry(currentPos, start);
+			return;
+		}
 		if (rnd.nextDouble() < crazy) {
 			// real crazy mode
 			int next = -1;
