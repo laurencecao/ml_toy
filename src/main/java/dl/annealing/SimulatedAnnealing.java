@@ -8,55 +8,18 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.FastMath;
 
 import dataset.NNDataset;
 
 public class SimulatedAnnealing {
 
-	final static double ENERGY_TARGET = 100d; // when temperature = 1
 	final static double TEMPERATURE = 100d;
-	final static double coolRate = 1.0d / TEMPERATURE; // FastMath.pow(TEMPERATURE,
-														// 2);
+	final static double coolRate = 1.0d * 0.1d / TEMPERATURE;
 	final static int debug = 10000000;
 
-	// [-5, -3] => [0.006, 0.05]
-	final static double very_small = 0.001d;
-	final static double very_big = 0.01d;
-
-	static class Paremeter {
-
-		double p0;
-		double p1;
-		double element;
-		double denominator;
-
-		double base0;
-		double base1;
-		double m;
-		double density;
-
-		Paremeter(double p0, double p1, double mean) {
-			this.p0 = p0 < p1 ? p0 : p1;
-			this.p1 = p0 < p1 ? p1 : p0;
-			this.m = mean;
-		}
-
-		double getEnergy(double currentCost, double nextCost, double tp) {
-			base1 = FastMath.log(p0) * tp * -1;
-			base0 = FastMath.log(p1) * tp * -1;
-			int sign = nextCost >= currentCost ? 1 : -1;
-			double inc = (nextCost - currentCost) / m;
-			inc = base1 - FastMath.min(FastMath.abs(inc), 1) * density;
-			return inc * sign;
-		}
-
-	}
-
-	static double energy(State current, State next, double tp, Paremeter param) {
-		// return (next.cost - current.cost) / current.cost;
-		return param.getEnergy(current.cost, next.cost, tp);
+	static double energy(State current, State next) {
+		return (next.cost - current.cost);
 	}
 
 	static boolean acceptOrDecline(double dE, double tp) {
@@ -72,10 +35,7 @@ public class SimulatedAnnealing {
 		// 1. timeIdx: little and little impact on temperature
 		double a = 1.0d / timeIdx;
 
-		// 2. dE with it's mean:
-		// double b = FastMath.abs(dE) / mean.getMean();
-
-		// 3. now temperature: faster at higher temperature
+		// 2. now temperature: faster at higher temperature
 		double c = FastMath.log(2, tp);
 
 		return coolRate * FastMath.exp(-1 * (a + c));
@@ -83,14 +43,13 @@ public class SimulatedAnnealing {
 
 	/**
 	 * <pre>
-	 * total cost = 708.0 ==> 
-	 *     22[0.0] --> 16[27.0] --> 12[29.0] --> 13[35.0] --> 14[10.0] --> 15[27.0] 
-	 * --> 17[26.0] --> 18[26.0] --> 19[22.0] --> 20[30.0] --> 27[31.0] --> 28[12.0] 
-	 * --> 29[20.0] --> 30[8.0] --> 31[12.0] --> 32[11.0] --> 33[21.0] --> 34[9.0] 
-	 * --> 35[18.0] --> 36[17.0] --> 37[12.0] --> 38[9.0] --> 39[6.0] --> 40[25.0] 
-	 * --> 41[6.0] --> 0[5.0] --> 1[8.0] --> 2[45.0] --> 3[9.0] --> 4[15.0] --> 5[17.0] 
-	 * --> 6[6.0] --> 7[10.0] --> 8[5.0] --> 9[20.0] --> 11[26.0] --> 10[11.0] --> 23[23.0] 
-	 * --> 24[8.0] --> 25[11.0] --> 26[3.0] --> 21[32.0] --> 22[5.0]
+	 * total cost = 704.0 ==> 
+	 *     12[0.0] --> 16[29.0] --> 21[30.0] --> 22[5.0] --> 11[36.0] --> 10[11.0] --> 23[23.0] 
+	 * --> 26[9.0] --> 25[3.0] --> 24[11.0] --> 9[14.0] --> 8[20.0] --> 7[5.0] --> 6[10.0] 
+	 * --> 5[6.0] --> 4[17.0] --> 3[15.0] --> 2[9.0] --> 1[45.0] --> 0[8.0] --> 41[5.0] 
+	 * --> 40[6.0] --> 39[25.0] --> 38[6.0] --> 37[9.0] --> 36[12.0] --> 35[17.0] --> 34[18.0] 
+	 * --> 33[9.0] --> 32[21.0] --> 31[11.0] --> 30[12.0] --> 29[8.0] --> 28[20.0] --> 27[12.0] 
+	 * --> 20[31.0] --> 19[30.0] --> 18[22.0] --> 17[26.0] --> 15[26.0] --> 14[27.0] --> 13[10.0] --> 12[35.0]
 	 * </pre>
 	 * 
 	 * @param args
@@ -104,14 +63,6 @@ public class SimulatedAnnealing {
 
 	static State training(RealMatrix weight) {
 		// initialization
-		SummaryStatistics mean = new SummaryStatistics();
-		double[][] w = weight.getData();
-		for (int i = 0; i < w.length; i++) {
-			for (int j = 0; j < w[0].length; j++) {
-				mean.addValue(w[i][j]);
-			}
-		}
-		Paremeter param = new Paremeter(very_small, very_big, mean.getMean());
 		State best = new State(null);
 		best.costIt();
 		best.temperature = TEMPERATURE;
@@ -129,7 +80,7 @@ public class SimulatedAnnealing {
 			next.costIt();
 
 			// calculate energy
-			double dE = energy(current, next, tp, param);
+			double dE = energy(current, next);
 
 			// accept or decline
 			boolean accept = acceptOrDecline(dE, tp);
@@ -140,7 +91,6 @@ public class SimulatedAnnealing {
 					best = current.copy();
 				}
 				tp = tp - cool(timeIdx, dE, tp);
-				// System.out.println("temperature: " + tp);
 			}
 
 			timeIdx++;
