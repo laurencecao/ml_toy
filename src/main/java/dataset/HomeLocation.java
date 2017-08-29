@@ -30,7 +30,7 @@ public class HomeLocation {
 		}
 	}
 
-	static RealVector[] getDate() {
+	static RealVector[] getData() {
 		RealVector[] ret = new RealVector[data.length];
 		for (int i = 0; i < data.length; i++) {
 			ret[i] = MatrixUtils.createRealVector(data[i]);

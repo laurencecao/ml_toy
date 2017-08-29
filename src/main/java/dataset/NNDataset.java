@@ -15,6 +15,7 @@ public class NNDataset {
 	public final static String DIGITAL = "DIGITAL";
 	public final static String HOME = "HOME";
 	public final static String TSP = "TSP";
+	public final static String WHOLESALE = "WHOLESALE";
 
 	final static double[][] xor_inputs = new double[][] {
 
@@ -52,7 +53,10 @@ public class NNDataset {
 			}
 		}
 		if (StringUtils.equalsIgnoreCase(HOME, name)) {
-			ret = HomeLocation.getDate();
+			ret = HomeLocation.getData();
+		}
+		if (StringUtils.equalsIgnoreCase(WHOLESALE, name)) {
+			ret = WholeSale.getData();
 		}
 		return ret;
 	}
@@ -83,6 +87,9 @@ public class NNDataset {
 		String[] ret = null;
 		if (StringUtils.equalsIgnoreCase(HOME, name)) {
 			ret = HomeLocation.getHeader();
+		}
+		if (StringUtils.equalsIgnoreCase(WHOLESALE, name)) {
+			ret = WholeSale.getHeader();
 		}
 		return ret;
 	}
