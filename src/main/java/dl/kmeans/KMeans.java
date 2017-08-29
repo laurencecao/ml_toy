@@ -12,13 +12,13 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.util.FastMath;
 
 import dataset.NNDataset;
 
 public class KMeans {
 
-	final static double VERY_BIG = 2 ^ 40;
-	final static int MAX_TURN = 30000;
+	final static double EPI = 0.01d;
 	final static int debug = 10000;
 
 	public static void main(String[] args) {
@@ -56,6 +56,7 @@ public class KMeans {
 
 		int attribute_sz = data.get(0).desc.getDimension();
 
+		double e = 0d;
 		int epoch = 0;
 		boolean toBeContinue = true;
 		while (toBeContinue) {
@@ -74,7 +75,8 @@ public class KMeans {
 			// recheck if convergenced
 			epoch++;
 			toBeContinue = !isConvergenced(centre, data);
-			toBeContinue = toBeContinue || epoch < MAX_TURN;
+			e = distributionStable(data, centre);
+			toBeContinue = toBeContinue || e > EPI;
 
 			if (epoch % debug == 0) {
 				int err = validClusting(data, centre, false);
@@ -83,7 +85,7 @@ public class KMeans {
 
 		}
 
-		System.out.println("KMeans clusting for " + K + " total epoch: " + epoch);
+		System.out.println("KMeans clusting for " + K + " total epoch: " + epoch + " with distribution varied: " + e);
 
 		double[] count = new double[K];
 		int total = 0;
@@ -101,6 +103,25 @@ public class KMeans {
 		System.out.println("not shortest node rate: " + 1.0d * err / data.size());
 		System.out.println("Cluster percent: " + Arrays.toString(count));
 
+	}
+
+	static double distributionStable(List<SomeThing> data, List<SomeThing> centre) {
+		int K = centre.size();
+		int total = 0;
+		for (int i = 0; i < K; i++) {
+			SomeThing thing = centre.get(i);
+			thing.lastClustering = thing.clustering;
+			thing.clustering = countDataInCluster(data, i);
+			total += thing.clustering;
+		}
+		double err = 0d;
+		for (int i = 0; i < K; i++) {
+			SomeThing thing = centre.get(i);
+			thing.clustering /= 1.0 * total;
+			err += FastMath.pow(thing.clustering - thing.lastClustering, 2);
+		}
+		err = FastMath.sqrt(err / K);
+		return err;
 	}
 
 	static void printLabel(SomeThing st, String[] header, int ct) {
@@ -235,6 +256,9 @@ class SomeThing {
 	Integer idx;
 	double dist;
 	Integer last;
+
+	double clustering; // convenience for check
+	double lastClustering;
 
 	SomeThing copy() {
 		SomeThing ret = new SomeThing();
