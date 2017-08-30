@@ -7,6 +7,8 @@ import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
+import dl.em.ThreeCoinProblemData;
+
 public class NNDataset {
 
 	public final static String XOR = "XOR";
@@ -16,6 +18,7 @@ public class NNDataset {
 	public final static String HOME = "HOME";
 	public final static String TSP = "TSP";
 	public final static String WHOLESALE = "WHOLESALE";
+	public final static String THREECOINS = "THREECOINS";
 
 	final static double[][] xor_inputs = new double[][] {
 
@@ -57,6 +60,9 @@ public class NNDataset {
 		}
 		if (StringUtils.equalsIgnoreCase(WHOLESALE, name)) {
 			ret = WholeSale.getData();
+		}
+		if (StringUtils.equalsIgnoreCase(THREECOINS, name)) {
+			ret = ThreeCoinProblemData.load(ThreeCoinProblemData.dataPath);
 		}
 		return ret;
 	}
