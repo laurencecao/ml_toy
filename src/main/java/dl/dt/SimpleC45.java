@@ -69,7 +69,7 @@ public class SimpleC45 {
 	}
 
 	static void printTree(DecisionNode root, String[] header) throws IOException {
-		DrawingUtils.drawTree(root, header);
+		DrawingUtils.drawTree(root, header, "tmp/dt.png");
 	}
 
 	static Integer predict(DecisionNode root, RealVector data) {

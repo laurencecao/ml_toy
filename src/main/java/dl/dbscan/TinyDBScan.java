@@ -1,5 +1,6 @@
 package dl.dbscan;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,23 +13,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import dataset.NNDataset;
+import utils.DrawingUtils;
 
 public class TinyDBScan {
 
-	public static void main(String[] args) {
-		RealVector[] origin = NNDataset.getData(NNDataset.WHOLESALE);
-		String[] header = NNDataset.getHeader(NNDataset.WHOLESALE);
-		header = ArrayUtils.subarray(header, 2, header.length);
+	public static void main(String[] args) throws IOException {
+		RealVector[] origin = NNDataset.getData(NNDataset.WINGNUT);
 
 		AtomicInteger seq = new AtomicInteger(0);
 		Function<RealVector, VisualPoint> conv = x -> {
 			int idx = seq.getAndIncrement();
 			// cutoff discrete value
-			RealVector v = x.getSubVector(2, x.getDimension() - 2);
+			RealVector v = x.getSubVector(1, x.getDimension() - 1);
 			VisualPoint ret = new VisualPoint(idx, v);
 			return ret;
 		};
@@ -37,12 +38,14 @@ public class TinyDBScan {
 		List<VisualPoint> data = Arrays.asList(origin).stream().map(conv).collect(Collectors.toList());
 		Collections.sort(data);
 
-		double eps = 5000;
-		int mPts = 10;
+		double eps = 0.25;
+		int mPts = 7;
 
 		training(data, eps, mPts);
 
 		printVisualPoints(data);
+
+		printDBScan(data);
 	}
 
 	static void training(List<VisualPoint> data, double eps, int mPts) {
@@ -63,12 +66,12 @@ public class TinyDBScan {
 			for (int j = i + 1; j < data.size(); j++) {
 				VisualPoint d2 = data.get(j);
 				// System.out.println(d1.v.getLInfDistance(d2.v));
-				if (d1.v.getLInfDistance(d2.v) <= eps) {
+				if (d1.v.getDistance(d2.v) <= eps) {
 					d1.candidate.add(d2.idx);
 					d2.candidate.add(d1.idx);
 				}
 			}
-			if (d1.candidate.size() >= mPts) {
+			if (d1.candidate.size() + 1 >= mPts) {
 				d1.type = VisualPoint.core;
 			}
 		}
@@ -145,6 +148,22 @@ public class TinyDBScan {
 		System.out.println(sb.toString());
 	}
 
+	static void printDBScan(List<VisualPoint> data) throws IOException {
+		Map<String, List<VisualPoint>> d = data.stream().collect(Collectors.groupingBy(VisualPoint::getLabel));
+		List<String> title = new ArrayList<String>();
+		List<double[][]> xy = new ArrayList<double[][]>();
+		d.forEach((k, v) -> {
+			title.add(k);
+			double[][] yy = new double[v.size()][];
+			for (int i = 0; i < yy.length; i++) {
+				yy[i] = v.get(i).v.toArray();
+			}
+			RealMatrix m = MatrixUtils.createRealMatrix(yy);
+			xy.add(m.transpose().getData());
+		});
+		DrawingUtils.drawClusterXY(title, xy, "tmp/dbscan.png");
+	}
+
 }
 
 class VisualPoint implements Comparable<VisualPoint> {
@@ -189,6 +208,10 @@ class VisualPoint implements Comparable<VisualPoint> {
 	@Override
 	public int compareTo(VisualPoint o) {
 		return Integer.valueOf(idx).compareTo(Integer.valueOf(o.idx));
+	}
+
+	public String getLabel() {
+		return label;
 	}
 
 }

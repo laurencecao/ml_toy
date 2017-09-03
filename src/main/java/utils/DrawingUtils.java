@@ -14,6 +14,12 @@ import org.knowm.xchart.BitmapEncoder;
 import org.knowm.xchart.BitmapEncoder.BitmapFormat;
 import org.knowm.xchart.QuickChart;
 import org.knowm.xchart.XYChart;
+import org.knowm.xchart.XYChartBuilder;
+import org.knowm.xchart.XYSeries;
+import org.knowm.xchart.XYSeries.XYSeriesRenderStyle;
+import org.knowm.xchart.style.Styler.LegendPosition;
+import org.knowm.xchart.style.markers.Marker;
+import org.knowm.xchart.style.markers.SeriesMarkers;
 
 import dl.dt.DecisionNode;
 //import guru.nidi.graphviz.attribute.Color;
@@ -61,7 +67,7 @@ public class DrawingUtils {
 		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
 	}
 
-	public static void drawTree(dl.dt.DecisionNode root, String[] header) throws IOException {
+	public static void drawTree(dl.dt.DecisionNode root, String[] header, String path) throws IOException {
 		final List<Node> allNode = new ArrayList<Node>();
 		final Map<dl.dt.DecisionNode, Node> dict = new HashMap<>();
 		dict.put(root, node(DecisionNode.dump(root, header)));
@@ -91,7 +97,23 @@ public class DrawingUtils {
 		System.out.println(allNode.size());
 
 		Graph g = graph("C4.5 Decision Tree").directed().with(allNode.toArray(new Node[allNode.size()]));
-		Graphviz.fromGraph(g).width(3000).render(Format.PNG).toFile(new File("tmp/dt.png"));
+		Graphviz.fromGraph(g).width(3000).render(Format.PNG).toFile(new File(path));
+	}
+
+	public static void drawClusterXY(List<String> title, List<double[][]> data, String path) throws IOException {
+		XYChart chart = new XYChartBuilder().title("Cluster").xAxisTitle("X").yAxisTitle("Y").build();
+		chart.getStyler().setDefaultSeriesRenderStyle(XYSeriesRenderStyle.Scatter);
+		chart.getStyler().setChartTitleVisible(false);
+		chart.getStyler().setLegendPosition(LegendPosition.InsideSW);
+		chart.getStyler().setMarkerSize(16);
+		Marker[] cap = new Marker[] { SeriesMarkers.CIRCLE, SeriesMarkers.DIAMOND, SeriesMarkers.SQUARE,
+				SeriesMarkers.TRIANGLE_DOWN, SeriesMarkers.TRIANGLE_UP };
+		for (int i = 0; i < title.size(); i++) {
+			XYSeries series = null;
+			series = chart.addSeries(title.get(i), data.get(i)[0], data.get(i)[1]);
+			series.setMarker(cap[i % cap.length]);
+		}
+		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
 	}
 
 }

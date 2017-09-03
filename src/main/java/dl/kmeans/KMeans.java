@@ -1,40 +1,42 @@
 package dl.kmeans;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.FastMath;
 
 import dataset.NNDataset;
+import utils.DrawingUtils;
 
 public class KMeans {
 
 	final static double EPI = 0.01d;
 	final static int debug = 10000;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		training(5);
 	}
 
-	static void training(int K) {
-		RealVector[] origin = NNDataset.getData(NNDataset.WHOLESALE);
-		String[] header = NNDataset.getHeader(NNDataset.WHOLESALE);
-		header = ArrayUtils.subarray(header, 2, header.length);
+	static void training(int K) throws IOException {
+		RealVector[] origin = NNDataset.getData(NNDataset.WINGNUT);
+		String[] header = new String[] { "X", "Y" };
 
 		Function<RealVector, SomeThing> conv = x -> {
 			SomeThing ret = new SomeThing();
 			int label = ThreadLocalRandom.current().nextInt(K);
 			// cutoff discrete value
-			ret.desc = x.getSubVector(2, x.getDimension() - 2);
+			ret.desc = x.getSubVector(1, x.getDimension() - 1);
 			ret.centre = ret.desc;
 			ret.idx = label;
 			ret.dist = -1;
@@ -103,6 +105,7 @@ public class KMeans {
 		System.out.println("not shortest node rate: " + 1.0d * err / data.size());
 		System.out.println("Cluster percent: " + Arrays.toString(count));
 
+		draw(data);
 	}
 
 	static double distributionStable(List<SomeThing> data, List<SomeThing> centre) {
@@ -246,6 +249,22 @@ public class KMeans {
 		return ret;
 	}
 
+	static void draw(List<SomeThing> data) throws IOException {
+		Map<String, List<SomeThing>> d = data.stream().collect(Collectors.groupingBy(SomeThing::getLabel));
+		List<String> title = new ArrayList<String>();
+		List<double[][]> xy = new ArrayList<double[][]>();
+		d.forEach((k, v) -> {
+			title.add(k);
+			double[][] yy = new double[v.size()][];
+			for (int i = 0; i < yy.length; i++) {
+				yy[i] = v.get(i).desc.toArray();
+			}
+			RealMatrix m = MatrixUtils.createRealMatrix(yy);
+			xy.add(m.transpose().getData());
+		});
+		DrawingUtils.drawClusterXY(title, xy, "tmp/kmeans.png");
+	}
+
 }
 
 class SomeThing {
@@ -259,6 +278,10 @@ class SomeThing {
 
 	double clustering; // convenience for check
 	double lastClustering;
+
+	public String getLabel() {
+		return label;
+	}
 
 	SomeThing copy() {
 		SomeThing ret = new SomeThing();

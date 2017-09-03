@@ -19,6 +19,7 @@ public class NNDataset {
 	public final static String TSP = "TSP";
 	public final static String WHOLESALE = "WHOLESALE";
 	public final static String THREECOINS = "THREECOINS";
+	public final static String WINGNUT = "WINGNUT";
 
 	final static double[][] xor_inputs = new double[][] {
 
@@ -63,6 +64,9 @@ public class NNDataset {
 		}
 		if (StringUtils.equalsIgnoreCase(THREECOINS, name)) {
 			ret = ThreeCoinProblemData.load(ThreeCoinProblemData.dataPath);
+		}
+		if (StringUtils.equalsIgnoreCase(WINGNUT, name)) {
+			ret = WingNut.getData();
 		}
 		return ret;
 	}
