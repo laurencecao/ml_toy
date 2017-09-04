@@ -3,7 +3,6 @@ package dl.bandit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.FastMath;
@@ -12,12 +11,10 @@ import utils.DrawingUtils;
 
 public class UCB1 {
 
-	final static double INCONFIDENCE = 0.05d;
-
 	public static void main(String[] args) throws IOException {
-		int TURN = 10000;
+		int TURN = 200;
 		// probability for 1
-		SlotMachine machine = new SlotMachine(0.4d, 0.7d, 0.1d, 0.2d, 0.9d);
+		SlotMachine machine = new SlotMachine(0.5d, 0.73d, 0.6d, 0.45d, 0.75d);
 		sampling(machine, TURN);
 		System.out.println("Total [" + TURN + "] reward: " + machine.getReward());
 	}
@@ -34,18 +31,14 @@ public class UCB1 {
 		// testing
 		for (int i = slot.getArmCount(); i < TURN; i++) {
 			// decide which to trial
-			int idx = UCBPolicy1(dist, i, INCONFIDENCE);
+			int idx = UCBPolicy1(dist, i);
 			boolean hit = slot.next(idx); // real world reward
 			UCBPolicy2(dist.get(idx), hit); // feedback to trial model
 		}
 		drawing(slot, dist, TURN);
 	}
 
-	static int UCBPolicy1(List<ContextUCB> ctx, int currTurn, double inconfidence) {
-		ThreadLocalRandom rnd = ThreadLocalRandom.current();
-		if (rnd.nextDouble() < inconfidence) {
-			return rnd.nextInt(ctx.size());
-		}
+	static int UCBPolicy1(List<ContextUCB> ctx, int currTurn) {
 		int ret = 0;
 		double max = -1d;
 		for (int i = 0; i < ctx.size(); i++) {

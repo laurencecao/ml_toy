@@ -3,7 +3,6 @@ package dl.bandit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.math3.distribution.BetaDistribution;
 
@@ -11,12 +10,10 @@ import utils.DrawingUtils;
 
 public class ThompsonSampling {
 
-	final static double EXPLORE = 0.05d;
-
 	public static void main(String[] args) throws IOException {
-		int TURN = 10000;
+		int TURN = 300;
 		// probability for 1
-		SlotMachine machine = new SlotMachine(0.4d, 0.7d, 0.1d, 0.2d, 0.9d);
+		SlotMachine machine = new SlotMachine(0.4d, 0.6d, 0.5d, 0.3d, 0.7d);
 		sampling(machine, TURN);
 		System.out.println("Total [" + TURN + "] reward: " + machine.getReward());
 	}
@@ -38,10 +35,6 @@ public class ThompsonSampling {
 	}
 
 	static int thompsonStage1(List<ContextBeta> ctx) {
-		ThreadLocalRandom rnd = ThreadLocalRandom.current();
-		if (rnd.nextDouble() < EXPLORE) {
-			return rnd.nextInt(ctx.size());
-		}
 		int ret = 0;
 		double max = -1d;
 		for (int i = 0; i < ctx.size(); i++) {
