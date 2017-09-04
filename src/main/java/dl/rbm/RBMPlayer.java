@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -16,7 +17,6 @@ import org.apache.commons.math3.random.UniformRandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 
 import com.beust.jcommander.JCommander;
-import com.google.common.collect.EvictingQueue;
 
 import dataset.MovieLens;
 import dataset.NNDataset;
@@ -110,7 +110,7 @@ public class RBMPlayer {
 		long ts = System.currentTimeMillis();
 		double norm = epi * 10000;
 		double rate = alpha;
-		EvictingQueue<Double> buf = EvictingQueue.create(100000);
+		CircularFifoQueue<Double> buf = new CircularFifoQueue<Double>(100000);
 		int i = 0;
 		for (i = 0; norm > epi; i++) {
 			norm = CD_K(rbm, data, rate);

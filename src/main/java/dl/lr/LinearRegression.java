@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
-
-import com.google.common.collect.EvictingQueue;
 
 import dataset.CircleRuleGame;
 import utils.DrawingUtils;
@@ -30,7 +29,7 @@ public class LinearRegression {
 		double[] w = rnd.doubles(CircleRuleGame.getData(0).length + 1).toArray();
 		double err = 0d;
 		err += 1000 * epi;
-		EvictingQueue<Double> buf = EvictingQueue.create(100000);
+		CircularFifoQueue<Double> buf = new CircularFifoQueue<Double>(100000);
 		while (err > epi) {
 			err = 0;
 			for (int i = 0; i < CircleRuleGame.count(); i++) {

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -13,8 +14,6 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.RealVectorChangingVisitor;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
-
-import com.google.common.collect.EvictingQueue;
 
 import utils.DrawingUtils;
 
@@ -53,7 +52,7 @@ public class GeneticFunctionFit {
 
 		Double BEST_X = 15d; // 0 = -(x/5) + 3
 		double BEST = costFunction.apply(BEST_X.intValue());
-		EvictingQueue<Double> buf = EvictingQueue.create(epoch);
+		CircularFifoQueue<Double> buf = new CircularFifoQueue<Double>(epoch);
 		RealVector[] pop = generateSeeds(chromosome_sz, population_count);
 		int i = 0;
 		double error = 10d;
