@@ -119,9 +119,10 @@ public class DrawingUtils {
 	public static void drawMultiSeries(List<String> title, List<double[][]> data, String path) throws IOException {
 		final XYChart chart = new XYChartBuilder().title("probabilities").xAxisTitle("epoch").yAxisTitle("Probability")
 				.build();
+		chart.getStyler().setMarkerSize(1);
 		// Customize Chart
-//		chart.getStyler().setLegendPosition(LegendPosition.InsideNE);
-//		chart.getStyler().setDefaultSeriesRenderStyle(XYSeriesRenderStyle.Area);
+		// chart.getStyler().setLegendPosition(LegendPosition.InsideNE);
+		// chart.getStyler().setDefaultSeriesRenderStyle(XYSeriesRenderStyle.Area);
 		for (int i = 0; i < data.size(); i++) {
 			chart.addSeries("Slot Machine " + i, data.get(i)[0], data.get(i)[1]);
 		}
