@@ -3,12 +3,15 @@ package dl.bandit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.math3.distribution.BetaDistribution;
 
 import utils.DrawingUtils;
 
 public class ThompsonSampling {
+
+	final static double EXPLORE = 0.05d;
 
 	public static void main(String[] args) throws IOException {
 		int TURN = 10000;
@@ -35,6 +38,10 @@ public class ThompsonSampling {
 	}
 
 	static int thompsonStage1(List<ContextBeta> ctx) {
+		ThreadLocalRandom rnd = ThreadLocalRandom.current();
+		if (rnd.nextDouble() < EXPLORE) {
+			return rnd.nextInt(ctx.size());
+		}
 		int ret = 0;
 		double max = -1d;
 		for (int i = 0; i < ctx.size(); i++) {

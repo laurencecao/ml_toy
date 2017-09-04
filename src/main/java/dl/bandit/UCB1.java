@@ -3,6 +3,7 @@ package dl.bandit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.FastMath;
@@ -10,6 +11,8 @@ import org.apache.commons.math3.util.FastMath;
 import utils.DrawingUtils;
 
 public class UCB1 {
+
+	final static double INCONFIDENCE = 0.05d;
 
 	public static void main(String[] args) throws IOException {
 		int TURN = 10000;
@@ -30,14 +33,19 @@ public class UCB1 {
 
 		// testing
 		for (int i = slot.getArmCount(); i < TURN; i++) {
-			int idx = UCBPolicy1(dist, i); // decide which to trial
+			// decide which to trial
+			int idx = UCBPolicy1(dist, i, INCONFIDENCE);
 			boolean hit = slot.next(idx); // real world reward
 			UCBPolicy2(dist.get(idx), hit); // feedback to trial model
 		}
 		drawing(slot, dist, TURN);
 	}
 
-	static int UCBPolicy1(List<ContextUCB> ctx, int currTurn) {
+	static int UCBPolicy1(List<ContextUCB> ctx, int currTurn, double inconfidence) {
+		ThreadLocalRandom rnd = ThreadLocalRandom.current();
+		if (rnd.nextDouble() < inconfidence) {
+			return rnd.nextInt(ctx.size());
+		}
 		int ret = 0;
 		double max = -1d;
 		for (int i = 0; i < ctx.size(); i++) {
