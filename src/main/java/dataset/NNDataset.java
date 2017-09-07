@@ -8,6 +8,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import dl.em.ThreeCoinProblemData;
+import dl.hmm.FourCoinProblemData;
 
 public class NNDataset {
 
@@ -19,6 +20,7 @@ public class NNDataset {
 	public final static String TSP = "TSP";
 	public final static String WHOLESALE = "WHOLESALE";
 	public final static String THREECOINS = "THREECOINS";
+	public final static String FOURCOINS = "FOURCOINS";
 	public final static String WINGNUT = "WINGNUT";
 
 	final static double[][] xor_inputs = new double[][] {
@@ -64,6 +66,9 @@ public class NNDataset {
 		}
 		if (StringUtils.equalsIgnoreCase(THREECOINS, name)) {
 			ret = ThreeCoinProblemData.load(ThreeCoinProblemData.dataPath);
+		}
+		if (StringUtils.equalsIgnoreCase(FOURCOINS, name)) {
+			ret = FourCoinProblemData.load(FourCoinProblemData.dataPath);
 		}
 		if (StringUtils.equalsIgnoreCase(WINGNUT, name)) {
 			ret = WingNut.getData();
