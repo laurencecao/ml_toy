@@ -19,13 +19,13 @@ public class FourCoinProblemData {
 	public final static String dataPath = "src/main/resources/hmm/fourcoin.txt";
 
 	public static void main(String[] args) {
-		int sample_size = 100;
+		int sample_size = 1000;
 		int batch_size = 10;
 		double a = 0.2d; // CoinA get HEAD/1 probs
 		double b = 0.6d; // CoinB get HEAD/1 probs
 		double c = 0.7d; // CoinA To CoinA probs
 		double d = 0.2d; // CoinB To CoinA probs
-		double e = 0.8d; // initial use CoinA probs
+		double e = 0.5d; // initial use CoinA probs
 		String[] data = generate(sample_size, batch_size, a, b, c, d, e);
 		save(dataPath, data, batch_size, a, b, c, d, e);
 	}
