@@ -19,15 +19,12 @@ public class FourCoin {
 	 */
 	public static void main(String[] args) {
 		RealVector[] seq = NNDataset.getData(NNDataset.FOURCOINS);
-		// foobar2();
+		foobar2();
 
 		// state = {A, B}; symbol = {T, H}
-		ContextHMM model = learning(seq, 2, 2);
-		// System.out.println(model.initialStates);
-		// System.out.println("transition table => " + model.transitionProbs);
-		// System.out.println("emission table => " + model.emissionProbs);
-
-		print(model);
+		// ContextHMM model = learning(seq, 2, 2);
+		// System.out.println("After training .......... ");
+		// print(model);
 	}
 
 	static void print(ContextHMM model) {
@@ -102,22 +99,30 @@ public class FourCoin {
 		ctx.emissionProbs.setEntry(1, 0, 0.5d);
 		ctx.emissionProbs.setEntry(1, 1, 0.5d);
 
-		alpha(d[0], ctx);
-		beta(d[0], ctx);
-		normalizationAB(ctx);
-		gamma(d[0], ctx);
-		xi(d[0], ctx);
-		normalizationGX(ctx);
-		System.out.println(ctx);
+		for (int i = 0; i < 10; i++) {
+			alpha(d[0], ctx);
+			beta(d[0], ctx);
+			// normalizationAB(ctx);
+			gamma(d[0], ctx);
+			xi(d[0], ctx);
+			// normalizationGX(ctx);
+			estimatePI(d[0], ctx);
+			estimateT(d[0], ctx);
+			estimateQ(d[0], ctx);
+
+			print(ctx);
+		}
 	}
 
 	static ContextHMM initContext(RealVector[] sequence, int state_size, int symbol_size) {
 		ContextHMM ret = new ContextHMM(sequence[0].getDimension(), state_size, symbol_size);
-		ret.symbolCounter = MatrixUtils.createRealVector(new double[ret.symbol_size]);
-		ret.initialStates = MatrixUtils.createRealVector(new double[ret.state_size]);
-		ret.initialStates.set(FastMath.pow(ret.state_size, -1));
+		RealMatrix init = initMatrix(ret.state_size, 1, true);
+		ret.initialStates = normalizeByColumn(init).getColumnVector(0);
+		ret.initialStates.set(1d / state_size);
 		ret.transitionProbs = initMatrix(ret.state_size, ret.state_size, true);
+		ret.transitionProbs = normalizeByColumn(ret.transitionProbs.transpose()).transpose();
 		ret.emissionProbs = initMatrix(ret.state_size, ret.symbol_size, true);
+		ret.emissionProbs = normalizeByColumn(ret.emissionProbs.transpose()).transpose();
 		ret.alpha = initMatrix(ret.state_size, ret.batch_size, false);
 		ret.beta = initMatrix(ret.state_size, ret.batch_size, false);
 		ret.gamma = initMatrix(ret.state_size, ret.batch_size, false);
@@ -136,7 +141,11 @@ public class FourCoin {
 
 		@Override
 		public double visit(int row, int column, double value) {
-			return ThreadLocalRandom.current().nextDouble();
+			double ret = ThreadLocalRandom.current().nextDouble();
+			while (ret < 0.1d) {
+				ret = ThreadLocalRandom.current().nextDouble();
+			}
+			return ret;
 		}
 
 		@Override
@@ -149,43 +158,21 @@ public class FourCoin {
 	static RealMatrix initMatrix(int row, int col, boolean initial) {
 		RealMatrix ret = MatrixUtils.createRealMatrix(row, col);
 		if (initial) {
-			ret = randonmize(ret);
+			ret.walkInOptimizedOrder(rnd);
 		}
 		return ret;
 	}
 
-	// normalization by column
-	static RealMatrix randonmize(RealMatrix m) {
+	static RealMatrix normalizeByColumn(RealMatrix m) {
 		RealMatrix ret = m.copy();
-		ThreadLocalRandom rnd = ThreadLocalRandom.current();
-		int c = ret.getColumnDimension();
-		int r = ret.getRowDimension();
-		RealVector cTotal = MatrixUtils.createRealVector(new double[c]);
-		cTotal.set(1);
-		RealVector rTotal = MatrixUtils.createRealVector(new double[r]);
-		rTotal.set(1);
-		for (int i = 1; i < r; i++) {
-			double tR = rTotal.getEntry(i);
-			for (int j = 1; j < c; j++) {
-				double tC = cTotal.getEntry(j);
-				double v = 2;
-				while (v >= tR && v >= tC) {
-					v = rnd.nextDouble();
-				}
-				tC -= v;
-				tR -= v;
-				cTotal.setEntry(j, tC);
-				ret.setEntry(i, j, v);
-			}
-			rTotal.setEntry(i, tR);
+		RealVector iden = MatrixUtils.createRealVector(new double[ret.getRowDimension()]);
+		iden.set(1);
+		for (int i = 0; i < ret.getColumnDimension(); i++) {
+			RealVector v = ret.getColumnVector(i);
+			double deno = iden.dotProduct(v);
+			v.mapDivideToSelf(deno);
+			ret.setColumnVector(i, v);
 		}
-		ret.setRowVector(0, rTotal);
-		ret.setColumnVector(0, cTotal);
-		RealVector id = MatrixUtils.createRealVector(new double[c]);
-		id.set(1);
-		id.setEntry(0, -1);
-		double v = id.dotProduct(ret.getRowVector(0));
-		ret.setEntry(0, 0, -1d * v);
 		return ret;
 	}
 
@@ -196,10 +183,14 @@ public class FourCoin {
 	 */
 	static ContextHMM learning(RealVector[] sequence, int state, int symbol) {
 		ContextHMM ctx = initContext(sequence, state, symbol);
-		for (int i = 0; i < sequence.length; i++) {
-			RealVector seq = sequence[i];
+		System.out.println("Before training ............ ");
+		print(ctx);
+		for (int i = 0; i < 100; i++) {
+			RealVector seq = sequence[0];
 			eStep(seq, ctx);
-			mStep(seq, ctx, i);
+			mStep(seq, ctx);
+			System.out.println("............ turn " + i);
+			print(ctx);
 		}
 		return ctx;
 	}
@@ -210,11 +201,10 @@ public class FourCoin {
 		// normalizationAB(ctx);
 		gamma(seq, ctx);
 		xi(seq, ctx);
-		normalizationGX(ctx);
 	}
 
-	static void mStep(RealVector seq, ContextHMM ctx, int round) {
-		estimatePI(seq, ctx, round);
+	static void mStep(RealVector seq, ContextHMM ctx) {
+		estimatePI(seq, ctx);
 		estimateT(seq, ctx);
 		estimateQ(seq, ctx);
 	}
@@ -317,32 +307,21 @@ public class FourCoin {
 		// total = FastMath.pow(total, -1);
 		total = FastMath.pow(denominator, -1);
 		for (int t = 0; t < ctx.xi.length; t++) {
-			ctx.xi[t] = ctx.xi[t].scalarMultiply(total);
+			ctx.xi[t] = ctx.xi[t].scalarMultiply(total).transpose();
 		}
 	}
 
-	static void estimatePI(RealVector sequence, ContextHMM ctx, int round) {
-		// beta distribution estimation
-		int symbol = Double.valueOf(sequence.getEntry(0)).intValue();
-		double ct = ctx.symbolCounter.getEntry(symbol) + 1;
-		ctx.symbolCounter.setEntry(symbol, ct);
-
-		double total = 0d;
-		for (int i = 0; i < ctx.initialStates.getDimension(); i++) {
-			ct = ctx.symbolCounter.getEntry(i);
-			double pH = 1d * (ct + 1) / (round + 2);
-			ctx.initialStates.setEntry(i, pH);
-			total += pH;
-		}
-
-		// normalization
-		ctx.initialStates.mapDivideToSelf(total);
+	static void estimatePI(RealVector sequence, ContextHMM ctx) {
+		RealVector v = ctx.gamma.getColumnVector(0);
+		ctx.initialStates = v;
 	}
 
 	static void estimateT(RealVector sequence, ContextHMM ctx) {
 		RealVector iden = MatrixUtils.createRealVector(new double[ctx.batch_size - 1]);
 		iden.set(1);
 		int N = ctx.state_size;
+		RealVector id = MatrixUtils.createRealVector(new double[ctx.state_size]);
+		id.set(1);
 
 		for (int i = 0; i < N; i++) {
 			RealVector v = MatrixUtils.createRealVector(new double[ctx.state_size]);
@@ -353,6 +332,9 @@ public class FourCoin {
 			double deno = iden.dotProduct(g);
 			deno = FastMath.pow(deno, -1);
 			v = v.mapMultiply(deno);
+			// deno = id.dotProduct(v);
+			// deno = FastMath.pow(deno, -1);
+			// v = v.mapMultiply(deno);
 			ctx.transitionProbs.setRowVector(i, v);
 		}
 	}
@@ -370,7 +352,7 @@ public class FourCoin {
 
 		RealVector id = MatrixUtils.createRealVector(new double[ctx.batch_size]);
 		id.set(1);
-		RealVector denominator = ctx.gamma.transpose().preMultiply(id);
+		RealVector denominator = g.transpose().preMultiply(id);
 
 		for (int i = 0; i < ctx.emissionProbs.getRowDimension(); i++) {
 			double deno = denominator.getEntry(i);
@@ -381,44 +363,17 @@ public class FourCoin {
 	}
 
 	static void normalizationAB(ContextHMM ctx) {
-		// 1. alpha
 		RealVector iden = MatrixUtils.createRealVector(new double[ctx.state_size]);
 		iden.set(1); // identity
 
 		for (int i = 0; i < ctx.alpha.getColumnDimension(); i++) {
-			RealVector v = ctx.alpha.getColumnVector(i);
-			double deno = iden.dotProduct(v);
-			v.mapDivideToSelf(deno);
-			ctx.alpha.setColumnVector(i, v);
-		}
-
-		// 2. beta
-		for (int i = 0; i < ctx.beta.getColumnDimension(); i++) {
-			RealVector v = ctx.beta.getColumnVector(i);
-			double deno = iden.dotProduct(v);
-			v.mapDivideToSelf(deno);
-			ctx.beta.setColumnVector(i, v);
-		}
-	}
-
-	static void normalizationGX(ContextHMM ctx) {
-		// 1. gamma
-		RealVector iden = MatrixUtils.createRealVector(new double[ctx.state_size]);
-		iden.set(1); // identity
-
-		for (int i = 0; i < ctx.gamma.getColumnDimension(); i++) {
-			RealVector v = ctx.gamma.getColumnVector(i);
-			double deno = iden.dotProduct(v);
-			v.mapDivideToSelf(deno);
-			ctx.gamma.setColumnVector(i, v);
-		}
-
-		// 2. xi
-		for (int i = 0; i < ctx.xi.length; i++) {
-			RealMatrix m = ctx.xi[i];
-			double deno = iden.dotProduct(m.preMultiply(iden));
-			m = m.scalarMultiply(FastMath.pow(deno, -1));
-			ctx.xi[i] = m;
+			RealVector a = ctx.alpha.getColumnVector(i);
+			RealVector b = ctx.beta.getColumnVector(i);
+			double deno = iden.dotProduct(a);
+			a = a.mapDivideToSelf(deno);
+			b = b.mapDivideToSelf(deno);
+			ctx.alpha.setColumnVector(i, a);
+			ctx.beta.setColumnVector(i, b);
 		}
 	}
 
@@ -450,8 +405,6 @@ class ContextHMM {
 		this.symbol_size = symbol;
 	}
 
-	// beta distribution, notion: α = 0.5, β = 0.5
-	RealVector symbolCounter;
 	RealVector initialStates; // π = state * 1
 	RealMatrix transitionProbs; // t = state * state
 	RealMatrix emissionProbs; // q = state * symbol
