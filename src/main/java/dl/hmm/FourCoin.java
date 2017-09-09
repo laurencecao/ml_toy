@@ -16,7 +16,7 @@ import dataset.NNDataset;
 public class FourCoin {
 
 	final static int TURN = 10;
-	final static double EPSILON = 0.0001d;
+	final static double EPSILON = 0.001d;
 
 	/**
 	 * second order Hidden Markov Model
@@ -24,24 +24,6 @@ public class FourCoin {
 	 * 
 	 * sigh! very sensitive to initial parameters
 	 * 
-	 * <pre>
-	Initial CoinA => 0.5474899276452769
-	Initial CoinB => 0.452510072354721
-	Transition Table: 
-	CoinA => CoinA: 0.5095629234833225
-	CoinA => CoinB: 0.49043707651667773
-	CoinB => CoinA: 0.5348077810413786
-	CoinB => CoinB: 0.4651922189586202
-	Emission Table: 
-	CoinA => HEAD: 0.29013594445632124
-	CoinA => TAIL: 0.709864055543679
-	CoinB => HEAD: 0.5981318549577567
-	CoinB => TAIL: 0.40186814504224344
-	TTTTTTHHTT => 0.0019267967917331837
-	TTTTTHHTHT => 0.0015116099142341382
-	[0, 0, 0, 0, 0, 0, 1, 1, 0, 0]
-	[0, 0, 0, 0, 0, 1, 1, 0, 1, 0]
-	 * </pre>
 	 * 
 	 * @param args
 	 */
@@ -65,9 +47,12 @@ public class FourCoin {
 		print(model);
 
 		// "HHHHHHHHTHHHHHHHTHTH" -> 2
+		// "BBABABABAABBBABBABBB"
+		// "BBBAABABABBABABBABAB"
 		RealVector s1 = MatrixUtils
 				.createRealVector(new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1 });
 		// "TTTTTTTTTHTTHHHTTTTT" -> 1
+		// "ABBAAABAABABBBABABAB"
 		RealVector s2 = MatrixUtils
 				.createRealVector(new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0 });
 
@@ -217,24 +202,6 @@ public class FourCoin {
 				ret = ThreadLocalRandom.current().nextDouble();
 			}
 			return ret;
-		}
-
-		@Override
-		public double end() {
-			return 0;
-		}
-
-	};
-
-	static RealMatrixChangingVisitor mInverse = new RealMatrixChangingVisitor() {
-
-		@Override
-		public void start(int rows, int columns, int startRow, int endRow, int startColumn, int endColumn) {
-		}
-
-		@Override
-		public double visit(int row, int column, double value) {
-			return FastMath.pow(value, -1);
 		}
 
 		@Override
