@@ -15,8 +15,8 @@ import dataset.NNDataset;
 
 public class FourCoin {
 
-	final static int TURN = 10;
-	final static double EPSILON = 0.001d;
+	final static int TURN = 100;
+	final static double EPSILON = 0.005d;
 
 	/**
 	 * second order Hidden Markov Model
@@ -29,12 +29,12 @@ public class FourCoin {
 	 */
 	public static void main(String[] args) {
 		RealVector[] seq = NNDataset.getData(NNDataset.FOURCOINS);
-		// foobar1();
-		// foobar2();
-		// boolean b = true;
-		// if (b) {
-		// System.exit(0);
-		// }
+//		 foobar1();
+		 foobar2();
+		 boolean b = true;
+		 if (b) {
+		 System.exit(0);
+		 }
 
 		/**
 		 * state = {A, B}; symbol = {T, H}
@@ -46,18 +46,47 @@ public class FourCoin {
 		System.out.println("After training .......... ");
 		print(model);
 
-		// "HHHHHHHHTHHHHHHHTHTH" -> 2
-		// "BBABABABAABBBABBABBB"
-		// "BBBAABABABBABABBABAB"
-		RealVector s1 = MatrixUtils
-				.createRealVector(new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1 });
-		// "TTTTTTTTTHTTHHHTTTTT" -> 1
-		// "ABBAAABAABABBBABABAB"
-		RealVector s2 = MatrixUtils
-				.createRealVector(new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0 });
+		/**
+		 * <pre>
+		"HHHHHHTHHH" -> 31
+		#AABABAABBA
+		#AABABAABBB
+		#AABABABAAB
+		#AABABBABAB
+		#ABAABBAAAB
+		#ABABAAAABB
+		#ABABAAABAB
+		#ABABBAABBB
+		#ABABBABABB
+		#ABABBBABBA
+		#ABABBBBBBA
+		#ABBABABABA
+		#ABBABBBAAB
+		#ABBABBBBAA
+		#ABBBABABAB
+		#ABBBBBABAB
+		#ABBBBBABBA
+		#BAABBBABBB
+		#BABABAABAB
+		#BABABBBABB
+		#BABBBABABB
+		#BBABAABBAA
+		#BBABABABAB
+		#BBBABBABAB
+		#BBBABBBBAB
+		#BBBBABAABB
+		#BBBBABABAA
+		#BBBBABABBA
+		#BBBBBAABAB
+		 * </pre>
+		 */
+		RealVector s1 = MatrixUtils.createRealVector(new double[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 });
+		// "TTTTTHTHHT" -> 1
+		// "AABBABBBAA"
+		RealVector s2 = MatrixUtils.createRealVector(new double[] { 0, 0, 0, 0, 0, 1, 0, 1, 1, 0 });
 
-		System.out.println("HHHHHHHHTHHHHHHHTHTH => " + evaluation(s1, model));
-		System.out.println("TTTTTTTTTHTTHHHTTTTT => " + evaluation(s2, model));
+		System.out.println("HHHHHHTHHH => " + evaluation(s1, model));
+		System.out.println("TTTTTHTHHT => " + evaluation(s2, model));
 
 		int[] symbol = null;
 		symbol = decoding(s1, model);

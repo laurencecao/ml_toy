@@ -20,7 +20,7 @@ public class FourCoinProblemData {
 
 	public static void main(String[] args) {
 		int sample_size = 10000;
-		int batch_size = 20;
+		int batch_size = 10;
 		double a = 0.4d; // CoinA get HEAD/1 probs
 		double b = 0.7d; // CoinB get HEAD/1 probs
 		double c = 0.3d; // CoinA To CoinA probs
