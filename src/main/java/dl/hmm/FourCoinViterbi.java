@@ -14,9 +14,10 @@ import dataset.NNDataset;
 
 public class FourCoinViterbi {
 
-	final static int TURN = 10;
+	final static int TURN = 5000;
 	final static double EPSILON = 0.001d;
 	final static int DEBUG = 10;
+	final static double VERYSMALL = 0.00000001d;
 
 	/**
 	 * second order Hidden Markov Model
@@ -107,7 +108,7 @@ public class FourCoinViterbi {
 		System.out.println("0110 => " + evaluation(s2, model));
 
 		int[] symbol = null;
-		symbol = decoding(s2, model);
+		symbol = decodingV2(s2, model);
 		System.out.println(Arrays.toString(symbol));
 
 	}
@@ -130,12 +131,12 @@ public class FourCoinViterbi {
 		ctx.emissionProbs.setEntry(1, 0, 0.5d);
 		ctx.emissionProbs.setEntry(1, 1, 0.5d);
 
-		int[] demo = decoding(d[0], ctx);
+		int[] demo = decodingV2(d[0], ctx);
 		System.out.println(Arrays.toString(demo));
 
 		for (int i = 0; i < 100; i++) {
 			ContextHMM c = mStep(d, ctx);
-			demo = decoding(d[0], c);
+			demo = decodingV2(d[0], c);
 			System.out.println("decoding at [" + i + "] --> " + Arrays.toString(demo));
 			ctx = c;
 
@@ -148,7 +149,7 @@ public class FourCoinViterbi {
 		System.out.println(Arrays.toString(d[0].toArray()) + " => " + evaluation(d[0], ctx));
 
 		int[] symbol = null;
-		symbol = decoding(d[0], ctx);
+		symbol = decodingV2(d[0], ctx);
 		System.out.println(Arrays.toString(symbol));
 	}
 
@@ -215,13 +216,14 @@ public class FourCoinViterbi {
 	}
 
 	static double checkConvergence(ContextHMM c1, ContextHMM c2) {
+		double n0 = c1.initialStates.subtract(c2.initialStates).getNorm();
 		double n1 = c1.transitionProbs.subtract(c2.transitionProbs).getNorm();
 		double n2 = c1.emissionProbs.subtract(c2.emissionProbs).getNorm();
-		return (n1 + n2) / 2;
+		return (n0 + n1 + n2) / 3;
 	}
 
 	/**
-	 * Baum-Welch Algorithm
+	 * Viterbi Training Algorithm
 	 * 
 	 * @param sequence
 	 */
@@ -231,7 +233,7 @@ public class FourCoinViterbi {
 		for (t = 0; t < TURN; t++) {
 
 			ContextHMM ctx = mStep(sequence, ret);
-//			double eps = checkConvergence(ret, ctx);
+			double eps = checkConvergence(ret, ctx);
 
 			ret = ctx;
 
@@ -240,9 +242,9 @@ public class FourCoinViterbi {
 				print(ret);
 			}
 
-//			if (eps < EPSILON) {
-//				break;
-//			}
+			if (eps < EPSILON) {
+				break;
+			}
 
 		}
 		System.out.println("Total Learning Turn: " + t);
@@ -252,13 +254,13 @@ public class FourCoinViterbi {
 	static ContextHMM mStep(RealVector[] seq, ContextHMM ctx) {
 		ContextHMM ret = ctx.copy();
 		RealMatrix transition = MatrixUtils.createRealMatrix(ret.state_size, ret.state_size);
-		transition = transition.scalarAdd(0.00001d);
+		transition = transition.scalarAdd(VERYSMALL);
 		RealMatrix emission = MatrixUtils.createRealMatrix(ret.state_size, ret.symbol_size);
-		emission = emission.scalarAdd(0.00001d);
+		emission = emission.scalarAdd(VERYSMALL);
 		RealVector initial = MatrixUtils.createRealVector(new double[ret.state_size]);
-		initial = initial.mapAddToSelf(0.00001d);
+		initial = initial.mapAddToSelf(VERYSMALL);
 		for (int i = 0; i < seq.length; i++) {
-			int[] path = decoding(seq[i], ret);
+			int[] path = decodingV2(seq[i], ret);
 			double iCount = initial.getEntry(path[0]) + 1;
 			initial.setEntry(path[0], iCount);
 			double[] symb = seq[i].toArray();
@@ -385,63 +387,6 @@ public class FourCoinViterbi {
 		alphaV2(sequence, model);
 		RealVector v = model.alpha.getColumnVector(model.batch_size - 1);
 		return ContextHMM.eexp(ContextHMM.sumAtLogSpace(v.toArray()));
-	}
-
-	/**
-	 * Viterbi Algorithm
-	 */
-	static int[] decoding(RealVector sequence, ContextHMM ctx) {
-		double[] seq = sequence.toArray();
-		ContextHMM model = ctx.copy();
-		RealMatrix viterbi = MatrixUtils.createRealMatrix(model.state_size, seq.length);
-		RealMatrix bt = viterbi.copy();
-		int symbol = Double.valueOf(seq[0]).intValue();
-		RealVector output = model.emissionProbs.getColumnVector(symbol);
-		viterbi.setColumnVector(0, model.initialStates.ebeMultiply(output));
-
-		for (int i = 1; i < seq.length; i++) {
-			symbol = Double.valueOf(seq[i]).intValue();
-			output = model.emissionProbs.getColumnVector(symbol);
-			RealVector v = viterbi.getColumnVector(i - 1);
-
-			for (int s = 0; s < model.state_size; s++) {
-				double last_p = 0d;
-				double last_idx = 0d;
-				// any_state -> s
-				RealVector tr = model.transitionProbs.getColumnVector(s);
-				// backtrace probs
-				RealVector btProbs = tr.ebeMultiply(v).ebeMultiply(output);
-				for (int j = 0; j < btProbs.getDimension(); j++) {
-					// j is from_state;
-					double p = btProbs.getEntry(j);
-					if (last_p < p) { // p max but op maybe not
-						last_p = p; // max
-						last_idx = j;
-					}
-				}
-				viterbi.setEntry(s, i, last_p);
-				bt.setEntry(s, i, last_idx);
-			}
-		}
-
-		RealVector last = viterbi.getColumnVector(viterbi.getColumnDimension() - 1);
-		double last_p = 0d;
-		int last_idx = 0;
-		for (int s = 0; s < last.getDimension(); s++) {
-			if (last_p < last.getEntry(s)) {
-				last_p = last.getEntry(s);
-				last_idx = s;
-			}
-		}
-
-		int[] ret = new int[sequence.getDimension()];
-		ret[ret.length - 1] = last_idx;
-		for (int i = ret.length - 2; i >= 0; i--) {
-			int idx = i + 1;
-			ret[i] = Double.valueOf(bt.getEntry(ret[idx], idx)).intValue();
-		}
-
-		return ret;
 	}
 
 	static int[] decodingV2(RealVector sequence, ContextHMM ctx) {

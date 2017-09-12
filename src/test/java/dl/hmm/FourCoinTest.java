@@ -265,7 +265,7 @@ public class FourCoinTest {
 		System.out.println(Arrays.toString(o));
 	}
 
-	@Test
+	// @Test
 	public void testRun1() {
 		ContextHMM model = ctx.copy();
 
@@ -290,6 +290,24 @@ public class FourCoinTest {
 			o = FourCoin.decodingV2(data[0], model);
 			System.out.println(model.transitionProbs);
 			System.out.println(Arrays.toString(o));
+		}
+
+	}
+
+	@Test
+	public void testViterbi() {
+		ContextHMM model = ctx.copy();
+
+		for (int i = 0; i < 10; i++) {
+			model = FourCoinViterbi.mStep(data, model);
+			int[] o = null;
+			o = FourCoin.decodingV2(data[0], model);
+			System.out.println();
+			System.out.println(model.initialStates);
+			System.out.println(model.transitionProbs);
+			System.out.println(model.emissionProbs);
+			System.out.println(Arrays.toString(o));
+			System.out.println();
 		}
 
 	}
