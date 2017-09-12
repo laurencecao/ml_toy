@@ -19,7 +19,7 @@ public class FourCoinProblemData {
 	public final static String dataPath = "src/main/resources/hmm/fourcoin.txt";
 
 	public static void main(String[] args) {
-		int sample_size = 10000;
+		int sample_size = 1000;
 		int batch_size = 10;
 		double a = 0.4d; // CoinA get HEAD/1 probs
 		double b = 0.7d; // CoinB get HEAD/1 probs

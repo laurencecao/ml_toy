@@ -3,10 +3,12 @@ package dl.hmm;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealMatrixChangingVisitor;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.util.FastMath;
 
 import dataset.NNDataset;
 
@@ -44,20 +46,18 @@ public class FourCoinViterbi {
 		System.out.println("After training .......... ");
 		print(model);
 
-		// "HHHHHHHHTHHHHHHHTHTH" -> 2
-		RealVector s1 = MatrixUtils
-				.createRealVector(new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1 });
-		// "TTTTTTTTTHTTHHHTTTTT" -> 1
-		RealVector s2 = MatrixUtils
-				.createRealVector(new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0 });
+		// "HHTHHHHHTH" -> 2
+		RealVector s1 = MatrixUtils.createRealVector(new double[] { 1, 1, 0, 1, 1, 1, 1, 1, 0, 1 });
+		// "TTTTTHTHHH" -> 1
+		RealVector s2 = MatrixUtils.createRealVector(new double[] { 0, 0, 0, 0, 0, 1, 0, 1, 1, 1 });
 
-		System.out.println("HHHHHHHHTHHHHHHHTHTH => " + evaluation(s1, model));
-		System.out.println("TTTTTTTTTHTTHHHTTTTT => " + evaluation(s2, model));
+		System.out.println("HHTHHHHHTH => " + evaluation(s1, model));
+		System.out.println("TTTTTHTHHH => " + evaluation(s2, model));
 
 		int[] symbol = null;
-		symbol = decoding(s1, model);
+		symbol = decodingV2(s1, model);
 		System.out.println(Arrays.toString(symbol));
-		symbol = decoding(s2, model);
+		symbol = decodingV2(s2, model);
 		System.out.println(Arrays.toString(symbol));
 	}
 
@@ -231,7 +231,7 @@ public class FourCoinViterbi {
 		for (t = 0; t < TURN; t++) {
 
 			ContextHMM ctx = mStep(sequence, ret);
-			double eps = checkConvergence(ret, ctx);
+//			double eps = checkConvergence(ret, ctx);
 
 			ret = ctx;
 
@@ -240,9 +240,9 @@ public class FourCoinViterbi {
 				print(ret);
 			}
 
-			if (eps < EPSILON) {
-				break;
-			}
+//			if (eps < EPSILON) {
+//				break;
+//			}
 
 		}
 		System.out.println("Total Learning Turn: " + t);
@@ -252,11 +252,11 @@ public class FourCoinViterbi {
 	static ContextHMM mStep(RealVector[] seq, ContextHMM ctx) {
 		ContextHMM ret = ctx.copy();
 		RealMatrix transition = MatrixUtils.createRealMatrix(ret.state_size, ret.state_size);
-		transition = transition.scalarAdd(0.01d);
+		transition = transition.scalarAdd(0.00001d);
 		RealMatrix emission = MatrixUtils.createRealMatrix(ret.state_size, ret.symbol_size);
-		emission = emission.scalarAdd(0.01d);
+		emission = emission.scalarAdd(0.00001d);
 		RealVector initial = MatrixUtils.createRealVector(new double[ret.state_size]);
-		initial = initial.mapAddToSelf(0.01d);
+		initial = initial.mapAddToSelf(0.00001d);
 		for (int i = 0; i < seq.length; i++) {
 			int[] path = decoding(seq[i], ret);
 			double iCount = initial.getEntry(path[0]) + 1;
@@ -330,6 +330,39 @@ public class FourCoinViterbi {
 		}
 	}
 
+	static void alphaV2(RealVector sequence, ContextHMM ctx) {
+		double[] o = sequence.toArray();
+
+		int symbol = Double.valueOf(o[0]).intValue();
+		double[] a0 = ctx.emissionProbs.getColumnVector(symbol).toArray();
+		double[] v0 = ctx.initialStates.toArray();
+		Double[] v = ContextHMM.elnproduct(a0, v0);
+		RealVector vv = MatrixUtils.createRealVector(ArrayUtils.toPrimitive(v));
+		ctx.alpha.setColumnVector(0, vv);
+
+		for (int i = 1; i < o.length; i++) {
+			vv = ctx.alpha.getColumnVector(i - 1);
+			double[] last = vv.toArray();
+			symbol = Double.valueOf(o[i]).intValue();
+			Double[] vvv = new Double[ctx.state_size];
+			for (int to = 0; to < ctx.state_size; to++) {
+				double[] a = new double[ctx.state_size];
+				for (int from = 0; from < ctx.state_size; from++) {
+					double tr = ctx.transitionProbs.getEntry(from, to);
+					tr = ContextHMM.eln(tr);
+					a[from] = last[from] + tr;
+				}
+				vvv[to] = ContextHMM.sumAtLogSpace(a);
+				double outP = ctx.emissionProbs.getEntry(to, symbol);
+				outP = ContextHMM.eln(outP);
+				vvv[to] += outP;
+			}
+			vv = MatrixUtils.createRealVector(ArrayUtils.toPrimitive(vvv));
+			ctx.alpha.setColumnVector(i, vv);
+		}
+
+	}
+
 	/**
 	 * Forward Algorithm
 	 */
@@ -341,6 +374,17 @@ public class FourCoinViterbi {
 		iden.set(1);
 		RealVector v = model.alpha.getColumnVector(model.batch_size - 1);
 		return iden.dotProduct(v);
+	}
+
+	/**
+	 * Forward Algorithm at log space
+	 */
+	static double evaluationV2(RealVector sequence, ContextHMM ctx) {
+		ContextHMM model = ctx.copy();
+		model.alpha = MatrixUtils.createRealMatrix(model.state_size, sequence.getDimension());
+		alphaV2(sequence, model);
+		RealVector v = model.alpha.getColumnVector(model.batch_size - 1);
+		return ContextHMM.eexp(ContextHMM.sumAtLogSpace(v.toArray()));
 	}
 
 	/**
@@ -400,4 +444,53 @@ public class FourCoinViterbi {
 		return ret;
 	}
 
+	static int[] decodingV2(RealVector sequence, ContextHMM ctx) {
+		double[] seq = sequence.toArray();
+		ContextHMM model = ctx.copy();
+
+		RealMatrix vb = MatrixUtils.createRealMatrix(model.state_size, seq.length);
+		RealMatrix traceback = MatrixUtils.createRealMatrix(model.state_size, seq.length);
+		int symbol = Double.valueOf(seq[0]).intValue();
+		for (int from = 0; from < ctx.state_size; from++) {
+			double pi = ContextHMM.eln(ctx.initialStates.getEntry(from));
+			double em = ContextHMM.eln(ctx.emissionProbs.getEntry(from, symbol));
+			Double p = pi + em;
+			vb.setEntry(from, 0, p);
+		}
+		for (int t = 1; t < seq.length; t++) {
+			symbol = Double.valueOf(seq[t]).intValue();
+			for (int to = 0; to < ctx.state_size; to++) {
+				double maxp = -1000d;
+				int s = 0;
+				for (int from = 0; from < ctx.state_size; from++) {
+					double lastp = vb.getEntry(from, t - 1);
+					double tr = ctx.transitionProbs.getEntry(from, to);
+					tr = tr <= 0 ? 0 : FastMath.log(tr);
+					double op = ctx.emissionProbs.getEntry(to, symbol);
+					op = op <= 0 ? 0 : FastMath.log(op);
+					double p = lastp + tr + op;
+					if (p > maxp) {
+						s = from;
+						maxp = p;
+					}
+				}
+				vb.setEntry(to, t, maxp);
+				traceback.setEntry(to, t, s);
+			}
+		}
+
+		int[] ret = new int[sequence.getDimension()];
+		double maxp = -1000d;
+		for (int s = 0; s < ctx.state_size; s++) {
+			if (maxp < vb.getEntry(s, seq.length - 1)) {
+				maxp = vb.getEntry(s, seq.length - 1);
+				ret[seq.length - 1] = s;
+			}
+		}
+		for (int t = seq.length - 1; t > 0; t--) {
+			int s = ret[t];
+			ret[t - 1] = Double.valueOf(traceback.getEntry(s, t)).intValue();
+		}
+		return ret;
+	}
 }

@@ -5,18 +5,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealMatrixChangingVisitor;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.FastMath;
 
 import dataset.NNDataset;
 
 public class FourCoin {
 
-	final static int TURN = 100;
-	final static double EPSILON = 0.005d;
+	final static int TURN = 5000;
+	final static double EPSILON = FastMath.log(0.0005d);
 
 	/**
 	 * second order Hidden Markov Model
@@ -29,12 +31,12 @@ public class FourCoin {
 	 */
 	public static void main(String[] args) {
 		RealVector[] seq = NNDataset.getData(NNDataset.FOURCOINS);
-//		 foobar1();
-		 foobar2();
-		 boolean b = true;
-		 if (b) {
-		 System.exit(0);
-		 }
+		// foobar1();
+		// foobar2();
+		// boolean b = true;
+		// if (b) {
+		// System.exit(0);
+		// }
 
 		/**
 		 * state = {A, B}; symbol = {T, H}
@@ -48,51 +50,28 @@ public class FourCoin {
 
 		/**
 		 * <pre>
-		"HHHHHHTHHH" -> 31
-		#AABABAABBA
-		#AABABAABBB
-		#AABABABAAB
-		#AABABBABAB
-		#ABAABBAAAB
-		#ABABAAAABB
-		#ABABAAABAB
-		#ABABBAABBB
-		#ABABBABABB
-		#ABABBBABBA
-		#ABABBBBBBA
-		#ABBABABABA
-		#ABBABBBAAB
-		#ABBABBBBAA
-		#ABBBABABAB
-		#ABBBBBABAB
-		#ABBBBBABBA
-		#BAABBBABBB
-		#BABABAABAB
-		#BABABBBABB
-		#BABBBABABB
-		#BBABAABBAA
-		#BBABABABAB
-		#BBBABBABAB
-		#BBBABBBBAB
-		#BBBBABAABB
-		#BBBBABABAA
-		#BBBBABABBA
-		#BBBBBAABAB
+		"HHTHHHHHTH" -> 6
+		#ABABABABAA
+		#ABABABABAB
+		#AAABAABAAB
+		#BABBABABAA
+		#BBABBBABAB
+		#BBABAABAAA
 		 * </pre>
 		 */
-		RealVector s1 = MatrixUtils.createRealVector(new double[] { 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 });
-		// "TTTTTHTHHT" -> 1
-		// "AABBABBBAA"
-		RealVector s2 = MatrixUtils.createRealVector(new double[] { 0, 0, 0, 0, 0, 1, 0, 1, 1, 0 });
+		RealVector s1 = MatrixUtils.createRealVector(new double[] { 1, 1, 0, 1, 1, 1, 1, 1, 0, 1 });
+		// "TTTTTHTHHH" -> 1
+		// "BAAABABABA"
+		RealVector s2 = MatrixUtils.createRealVector(new double[] { 0, 0, 0, 0, 0, 1, 0, 1, 1, 1 });
 
-		System.out.println("HHHHHHTHHH => " + evaluation(s1, model));
-		System.out.println("TTTTTHTHHT => " + evaluation(s2, model));
+		System.out.println("HHTHHHHHTH => " + evaluation(s1, model));
+		System.out.println("TTTTTHTHHH => " + evaluation(s2, model));
 
 		int[] symbol = null;
 		symbol = decoding(s1, model);
-		System.out.println(Arrays.toString(symbol));
+		System.out.println(s1 + " => " + Arrays.toString(symbol));
 		symbol = decoding(s2, model);
-		System.out.println(Arrays.toString(symbol));
+		System.out.println(s2 + " => " + Arrays.toString(symbol));
 	}
 
 	static void print(ContextHMM model) {
@@ -261,12 +240,6 @@ public class FourCoin {
 		return ret;
 	}
 
-	static double checkConvergence(ContextHMM c1, ContextHMM c2) {
-		double n1 = c1.transitionProbs.subtract(c2.transitionProbs).getNorm();
-		double n2 = c1.emissionProbs.subtract(c2.emissionProbs).getNorm();
-		return (n1 + n2) / 2;
-	}
-
 	/**
 	 * Baum-Welch Algorithm
 	 * 
@@ -275,6 +248,7 @@ public class FourCoin {
 	static ContextHMM learning(RealVector[] sequence, ContextHMM origin, int debug) {
 		List<ContextHMM> est = new ArrayList<ContextHMM>();
 
+		// double last = 1000d;
 		ContextHMM ret = origin.copy();
 		int t = 0;
 		for (t = 0; t < TURN; t++) {
@@ -282,13 +256,18 @@ public class FourCoin {
 			for (int i = 0; i < sequence.length; i++) {
 				ContextHMM ctx = ret.copy();
 				RealVector seq = sequence[i];
-
-				eStep(seq, ctx);
+				ctx.like = evaluationV2(seq, ctx);
+				eStepV2(seq, ctx);
 				est.add(ctx);
 			}
 
-			ContextHMM ctx = mStep(sequence, est.toArray(new ContextHMM[est.size()]));
-			double eps = checkConvergence(ret, ctx);
+			ContextHMM ctx = mStepV2(sequence, est.toArray(new ContextHMM[est.size()]));
+			SummaryStatistics updated = new SummaryStatistics();
+			for (int i = 0; i < sequence.length; i++) {
+				double l = evaluationV2(sequence[i], ctx);
+				updated.addValue(FastMath.log(FastMath.abs(l - ctx.like)));
+				// System.out.println(ctx.like + " ...... " + l);
+			}
 
 			ret = ctx;
 
@@ -296,9 +275,13 @@ public class FourCoin {
 				print(ret);
 			}
 
-			if (eps < EPSILON) {
+			double delta = updated.getMean();
+			// System.out.println(delta + "========" + last + " ======= " +
+			// updated.getStandardDeviation());
+			if (FastMath.exp(FastMath.abs(delta)) < EPSILON) {
 				break;
 			}
+			// last = delta;
 
 		}
 		System.out.println("Total Learning Turn: " + t);
@@ -321,6 +304,25 @@ public class FourCoin {
 		ret.initialStates = pi;
 		ret.transitionProbs = tr;
 		ret.emissionProbs = q;
+		return ret;
+	}
+
+	static void eStepV2(RealVector seq, ContextHMM ctx) {
+		alphaV2(seq, ctx);
+		betaV2(seq, ctx);
+		// normalizationAB(ctx);
+		gammaV2(seq, ctx);
+		ksiV2(seq, ctx);
+	}
+
+	static ContextHMM mStepV2(RealVector[] seq, ContextHMM ctx[]) {
+		ContextHMM ret = ctx[0].copy();
+		RealVector pi = estimatePIV2(ctx);
+		RealMatrix tr = estimateTV2(ctx);
+		RealMatrix q = estimateQV2(seq, ctx);
+		ret.initialStates = pi.copy();
+		ret.transitionProbs = tr.copy();
+		ret.emissionProbs = q.copy();
 		return ret;
 	}
 
@@ -348,6 +350,39 @@ public class FourCoin {
 		}
 	}
 
+	static void alphaV2(RealVector sequence, ContextHMM ctx) {
+		double[] o = sequence.toArray();
+
+		int symbol = Double.valueOf(o[0]).intValue();
+		double[] a0 = ctx.emissionProbs.getColumnVector(symbol).toArray();
+		double[] v0 = ctx.initialStates.toArray();
+		Double[] v = ContextHMM.elnproduct(a0, v0);
+		RealVector vv = MatrixUtils.createRealVector(ArrayUtils.toPrimitive(v));
+		ctx.alpha.setColumnVector(0, vv);
+
+		for (int i = 1; i < o.length; i++) {
+			vv = ctx.alpha.getColumnVector(i - 1);
+			double[] last = vv.toArray();
+			symbol = Double.valueOf(o[i]).intValue();
+			Double[] vvv = new Double[ctx.state_size];
+			for (int to = 0; to < ctx.state_size; to++) {
+				double[] a = new double[ctx.state_size];
+				for (int from = 0; from < ctx.state_size; from++) {
+					double tr = ctx.transitionProbs.getEntry(from, to);
+					tr = ContextHMM.eln(tr);
+					a[from] = last[from] + tr;
+				}
+				vvv[to] = ContextHMM.sumAtLogSpace(a);
+				double outP = ctx.emissionProbs.getEntry(to, symbol);
+				outP = ContextHMM.eln(outP);
+				vvv[to] += outP;
+			}
+			vv = MatrixUtils.createRealVector(ArrayUtils.toPrimitive(vvv));
+			ctx.alpha.setColumnVector(i, vv);
+		}
+
+	}
+
 	/**
 	 * <pre>
 	 * β_i(T) = 1
@@ -369,6 +404,34 @@ public class FourCoin {
 			RealVector q = ctx.emissionProbs.getColumnVector(symbol);
 			v = tr.preMultiply(beta.ebeMultiply(q));
 			ctx.beta.setColumnVector(i, v);
+		}
+	}
+
+	static void betaV2(RealVector sequence, ContextHMM ctx) {
+		double[] o = sequence.toArray();
+
+		// initialization β_i(T)
+		RealVector v = MatrixUtils.createRealVector(new double[ctx.state_size]);
+		v.set(0); // log(1) = 0
+		ctx.beta.setColumnVector(o.length - 1, v);
+
+		for (int i = o.length - 2; i >= 0; i--) {
+			RealVector beta = ctx.beta.getColumnVector(i + 1);
+			double[] last = beta.toArray();
+			int symbol = Double.valueOf(o[i + 1]).intValue();
+			double[] vvv = new double[ctx.state_size];
+			for (int from = 0; from < ctx.state_size; from++) {
+				Double[] vv = new Double[ctx.state_size];
+				for (int to = 0; to < ctx.state_size; to++) {
+					double tr = ctx.transitionProbs.getEntry(from, to);
+					tr = ContextHMM.eln(tr);
+					double q = ctx.emissionProbs.getEntry(to, symbol);
+					q = ContextHMM.eln(q);
+					vv[to] = last[to] + tr + q;
+				}
+				vvv[from] = ContextHMM.sumAtLogSpace(vv);
+			}
+			ctx.beta.setColumnVector(i, MatrixUtils.createRealVector(vvv));
 		}
 	}
 
@@ -394,6 +457,17 @@ public class FourCoin {
 		}
 	}
 
+	static void gammaV2(RealVector sequence, ContextHMM ctx) {
+		for (int i = 0; i < ctx.batch_size; i++) {
+			RealVector a = ctx.alpha.getColumnVector(i);
+			RealVector b = ctx.beta.getColumnVector(i);
+			RealVector v = a.add(b);
+			double deno = ContextHMM.sumAtLogSpace(v.toArray());
+			v = v.mapSubtractToSelf(deno);
+			ctx.gamma.setColumnVector(i, v);
+		}
+	}
+
 	static void ksi(RealVector sequence, ContextHMM ctx) {
 		double[] o = sequence.toArray(); // turn count
 		RealVector iden = MatrixUtils.createRealVector(new double[ctx.state_size]);
@@ -415,6 +489,30 @@ public class FourCoin {
 		}
 	}
 
+	static void ksiV2(RealVector sequence, ContextHMM ctx) {
+		double[] o = sequence.toArray(); // turn count
+		for (int t = 0; t < ctx.batch_size - 1; t++) {
+			int symbol = Double.valueOf(o[t + 1]).intValue();
+			RealMatrix ksi = ctx.ksi[t];
+			double[] deno = new double[ctx.state_size];
+			for (int from = 0; from < ctx.state_size; from++) {
+				for (int to = 0; to < ctx.state_size; to++) {
+					double tr = ctx.transitionProbs.getEntry(from, to);
+					tr = ContextHMM.eln(tr);
+					double a = ctx.alpha.getEntry(from, t);
+					double b = ctx.beta.getEntry(to, t + 1);
+					double outP = ctx.emissionProbs.getEntry(to, symbol);
+					outP = ContextHMM.eln(outP);
+					double p = tr + a + b + outP;
+					ksi.setEntry(from, to, p);
+				}
+				deno[from] = ContextHMM.sumAtLogSpace(ksi.getRowVector(from).toArray());
+			}
+			double denominator = ContextHMM.sumAtLogSpace(deno) * -1d;
+			ctx.ksi[t] = ctx.ksi[t].scalarAdd(denominator);
+		}
+	}
+
 	static RealVector estimatePI(ContextHMM[] ctx) {
 		RealVector sum = ctx[0].initialStates.copy();
 		sum.set(0);
@@ -423,6 +521,23 @@ public class FourCoin {
 			sum = sum.add(v);
 		}
 		return sum.mapMultiplyToSelf(FastMath.pow(ctx.length, -1));
+	}
+
+	static RealVector estimatePIV2(ContextHMM[] ctx) {
+		double[] v0 = ctx[0].gamma.getColumnVector(0).toArray();
+		for (int i = 1; i < ctx.length; i++) {
+			double[] v = ctx[i].gamma.getColumnVector(0).toArray();
+			for (int j = 0; j < v0.length; j++) {
+				v0[j] = ContextHMM.sumAtLogSpace(new double[] { v0[j], v[j] });
+			}
+		}
+		RealVector ret = MatrixUtils.createRealVector(v0);
+		ret = ret.mapSubtractToSelf(ContextHMM.eln(1.0d * ctx.length));
+		double[] r = ret.toArray();
+		for (int i = 0; i < r.length; i++) {
+			r[i] = ContextHMM.eexp(r[i]);
+		}
+		return MatrixUtils.createRealVector(r);
 	}
 
 	static RealMatrix estimateT(ContextHMM[] ctx) {
@@ -448,6 +563,46 @@ public class FourCoin {
 			deno = FastMath.pow(deno, -1);
 			v = v.mapMultiply(deno);
 			ret.setRowVector(i, v);
+		}
+		return ret;
+	}
+
+	static RealMatrix estimateTV2(ContextHMM[] ctx) {
+		RealMatrix eleMat = MatrixUtils.createRealMatrix(ctx[0].state_size, ctx[0].state_size);
+		RealMatrix denoMat = MatrixUtils.createRealMatrix(ctx[0].state_size, ctx[0].state_size);
+		for (int d = 0; d < ctx.length; d++) {
+			for (int from = 0; from < ctx[0].state_size; from++) {
+				double[] deno = new double[ctx[d].batch_size - 1];
+				for (int t = 0; t < ctx[d].gamma.getColumnDimension() - 1; t++) {
+					deno[t] = ctx[d].gamma.getEntry(from, t);
+				}
+				double denominator = ContextHMM.sumAtLogSpace(deno);
+				RealVector old_deno = denoMat.getRowVector(from);
+				Double new_deno = ContextHMM.sumAtLogSpace(old_deno.getEntry(0), denominator);
+				old_deno.set(new_deno);
+				denoMat.setRowVector(from, old_deno);
+				for (int to = 0; to < ctx[d].state_size; to++) {
+					double[] tr = new double[ctx[d].ksi.length];
+					for (int t = 0; t < ctx[d].ksi.length; t++) {
+						tr[t] = ctx[d].ksi[t].getEntry(from, to);
+					}
+					double element = ContextHMM.sumAtLogSpace(tr);
+					double v = ContextHMM.sumAtLogSpace(eleMat.getEntry(from, to), element);
+					eleMat.setEntry(from, to, v);
+				}
+			}
+		}
+		// every element subtract e
+		RealMatrix ret = MatrixUtils.createRealMatrix(ctx[0].state_size, ctx[0].state_size);
+		for (int from = 0; from < ret.getRowDimension(); from++) {
+			for (int to = 0; to < ret.getColumnDimension(); to++) {
+				double ele = FastMath.exp(eleMat.getEntry(from, to)) - 1;
+				ele = ele <= 0 ? 0 : FastMath.log(ele);
+				double deno = ContextHMM.eexp(denoMat.getEntry(from, to)) - 1;
+				deno = deno <= 0 ? 0 : FastMath.log(deno);
+				double v = ele - deno;
+				ret.setEntry(from, to, ContextHMM.eexp(v));
+			}
 		}
 		return ret;
 	}
@@ -480,6 +635,41 @@ public class FourCoin {
 		return emi;
 	}
 
+	static RealMatrix estimateQV2(RealVector[] sequence, ContextHMM[] ctx) {
+		RealMatrix eleMat = MatrixUtils.createRealMatrix(ctx[0].state_size, ctx[0].symbol_size);
+		RealMatrix denoMat = MatrixUtils.createRealMatrix(ctx[0].state_size, ctx[0].symbol_size);
+		for (int d = 0; d < ctx.length; d++) {
+			for (int from = 0; from < ctx[d].state_size; from++) {
+				RealVector g = ctx[d].gamma.getRowVector(from);
+				double ele = 0d;
+				double deno = 0d;
+				for (int s = 0; s < ctx[d].symbol_size; s++) {
+					for (int t = 0; t < sequence[d].getDimension(); t++) {
+						int symbol = Double.valueOf(sequence[d].getEntry(t)).intValue();
+						if (symbol == s) {
+							ele = ContextHMM.sumAtLogSpace(eleMat.getEntry(from, s), g.getEntry(t));
+							eleMat.setEntry(from, s, ele);
+						}
+						deno = ContextHMM.sumAtLogSpace(denoMat.getEntry(from, s), g.getEntry(t));
+						denoMat.setEntry(from, s, deno);
+					}
+				}
+			}
+		}
+
+		RealMatrix ret = MatrixUtils.createRealMatrix(ctx[0].state_size, ctx[0].symbol_size);
+		for (int from = 0; from < ret.getRowDimension(); from++) {
+			for (int to = 0; to < ret.getColumnDimension(); to++) {
+				double ele = ContextHMM.eln(ContextHMM.eexp(eleMat.getEntry(from, to)) - 1);
+				double deno = ContextHMM.eln(ContextHMM.eexp(denoMat.getEntry(from, to)) - 1);
+				double v = ele - deno;
+				v = ContextHMM.eexp(v);
+				ret.setEntry(from, to, v);
+			}
+		}
+		return ret;
+	}
+
 	static void normalizationAB(ContextHMM ctx) {
 		RealVector iden = MatrixUtils.createRealVector(new double[ctx.state_size]);
 		iden.set(1); // identity
@@ -506,6 +696,17 @@ public class FourCoin {
 		iden.set(1);
 		RealVector v = model.alpha.getColumnVector(model.batch_size - 1);
 		return iden.dotProduct(v);
+	}
+
+	/**
+	 * Forward Algorithm at log space
+	 */
+	static double evaluationV2(RealVector sequence, ContextHMM ctx) {
+		ContextHMM model = ctx.copy();
+		model.alpha = MatrixUtils.createRealMatrix(model.state_size, sequence.getDimension());
+		alphaV2(sequence, model);
+		RealVector v = model.alpha.getColumnVector(model.batch_size - 1);
+		return ContextHMM.eexp(ContextHMM.sumAtLogSpace(v.toArray()));
 	}
 
 	/**
@@ -565,40 +766,55 @@ public class FourCoin {
 		return ret;
 	}
 
-}
+	/**
+	 * Viterbi Algorithm at log space
+	 */
+	static int[] decodingV2(RealVector sequence, ContextHMM ctx) {
+		double[] seq = sequence.toArray();
+		ContextHMM model = ctx.copy();
 
-class ContextHMM {
+		RealMatrix vb = MatrixUtils.createRealMatrix(model.state_size, seq.length);
+		RealMatrix traceback = MatrixUtils.createRealMatrix(model.state_size, seq.length);
+		int symbol = Double.valueOf(seq[0]).intValue();
+		for (int from = 0; from < ctx.state_size; from++) {
+			double pi = ContextHMM.eln(ctx.initialStates.getEntry(from));
+			double em = ContextHMM.eln(ctx.emissionProbs.getEntry(from, symbol));
+			Double p = pi + em;
+			vb.setEntry(from, 0, p);
+		}
+		for (int t = 1; t < seq.length; t++) {
+			symbol = Double.valueOf(seq[t]).intValue();
+			for (int to = 0; to < ctx.state_size; to++) {
+				double maxp = -1000d;
+				int s = 0;
+				for (int from = 0; from < ctx.state_size; from++) {
+					double lastp = vb.getEntry(from, t - 1);
+					double tr = ctx.transitionProbs.getEntry(from, to);
+					tr = tr <= 0 ? 0 : FastMath.log(tr);
+					double op = ctx.emissionProbs.getEntry(to, symbol);
+					op = op <= 0 ? 0 : FastMath.log(op);
+					double p = lastp + tr + op;
+					if (p > maxp) {
+						s = from;
+						maxp = p;
+					}
+				}
+				vb.setEntry(to, t, maxp);
+				traceback.setEntry(to, t, s);
+			}
+		}
 
-	final int batch_size;
-	final int state_size;
-	final int symbol_size;
-
-	ContextHMM(int batch, int state, int symbol) {
-		this.batch_size = batch;
-		this.state_size = state;
-		this.symbol_size = symbol;
-	}
-
-	RealVector initialStates; // π = state * 1
-	RealMatrix transitionProbs; // t = state * state
-	RealMatrix emissionProbs; // q = state * symbol
-
-	RealMatrix alpha; // α = state * turn
-	RealMatrix beta; // β = state * turn
-	RealMatrix gamma; // γ = state * turn
-	RealMatrix[] ksi; // ξ = (state * state) [turn]
-
-	public ContextHMM copy() {
-		ContextHMM ret = new ContextHMM(batch_size, state_size, symbol_size);
-		ret.initialStates = initialStates.copy();
-		ret.transitionProbs = transitionProbs.copy();
-		ret.emissionProbs = emissionProbs.copy();
-		ret.alpha = alpha.copy();
-		ret.beta = beta.copy();
-		ret.gamma = gamma.copy();
-		ret.ksi = new RealMatrix[ksi.length];
-		for (int i = 0; i < ksi.length; i++) {
-			ret.ksi[i] = ksi[i].copy();
+		int[] ret = new int[sequence.getDimension()];
+		double maxp = -1000d;
+		for (int s = 0; s < ctx.state_size; s++) {
+			if (maxp < vb.getEntry(s, seq.length - 1)) {
+				maxp = vb.getEntry(s, seq.length - 1);
+				ret[seq.length - 1] = s;
+			}
+		}
+		for (int t = seq.length - 1; t > 0; t--) {
+			int s = ret[t];
+			ret[t - 1] = Double.valueOf(traceback.getEntry(s, t)).intValue();
 		}
 		return ret;
 	}
