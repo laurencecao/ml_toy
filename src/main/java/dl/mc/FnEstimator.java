@@ -10,6 +10,7 @@ public class FnEstimator {
 	final static long SAMPLING_SIZE = 1000000;
 
 	public static void main(String[] args) {
+		String formular = "∫0->PI sin(x) dx  ===> ";
 		Function<Double, Double> integral_sin = x -> {
 			// notice: using derivation
 			// [-cos(x)]' = sin(x)
@@ -17,17 +18,18 @@ public class FnEstimator {
 		};
 		double r = 0d;
 		r = classicalIntegral(integral_sin, FastMath.PI, 0);
-		System.out.println(r);
+		System.out.println(formular + r);
 
 		Function<Double, Double> sin = x -> {
 			return FastMath.sin(x);
 		};
+		r = monteCarloIntegral(sin, FastMath.PI, 0);
+		System.out.println(formular + r);
+
 		r = monteCarloIntegral(x -> {
 			return Math.exp(x);
 		}, 1, 0);
-		System.out.println(r);
-		r = monteCarloIntegral(sin, FastMath.PI, 0);
-		System.out.println(r);
+		System.out.println("∫0->1 e dx  ===> " + r);
 	}
 
 	public static double monteCarloIntegral(Function<Double, Double> fn, double upper, double lower) {
