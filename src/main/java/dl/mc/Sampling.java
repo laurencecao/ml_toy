@@ -150,10 +150,7 @@ class ARS {
 	Supplier<Double> cNorm = () -> {
 		Double ret = 0d;
 		for (int i = 0; i < xPoints.size() - 1; i++) {
-			// System.out.println("-----> " + i);
 			Double xi1 = xPoints.get(i + 1);
-			// System.out.println("hu[" + (i + 1) + "]: " +
-			// FastMath.exp(hU.apply(i + 1)));
 			ret += (FastMath.exp(hU.apply(i + 1)) - FastMath.exp(hU.apply(i))) / dh.apply(xi1);
 		}
 		return ret;
