@@ -129,4 +129,9 @@ public class DrawingUtils {
 		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
 	}
 
+	public static void drawSampling(double[] err, double[] epoch, String path, String[] title) throws IOException {
+		XYChart chart = QuickChart.getChart(title[0], "Epoch", title[1], title[2], epoch, err);
+		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
+	}
+
 }

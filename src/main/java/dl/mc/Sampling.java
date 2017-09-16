@@ -1,19 +1,24 @@
 package dl.mc;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.FastMath;
 
+import utils.DrawingUtils;
+
 public class Sampling {
 
 	final static int SAMPLING_SIZE = 1000;
 	final static double M = 8d;
+	final static AtomicInteger name = new AtomicInteger();
 
 	static Function<Double, Double> sin = x -> {
 		return FastMath.sin(x);
@@ -37,7 +42,7 @@ public class Sampling {
 		return (-6 * x + 6) / (-3 * FastMath.pow(x, 2) + 6 * x + 5);
 	};
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		double r = monteCarloIntegral(sin, 0, FastMath.PI);
 		System.out.println("∫0->PI sin(x) dx  ===> " + r);
 
@@ -52,16 +57,26 @@ public class Sampling {
 		System.out.println("adaptive rejection sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx  ===> " + r);
 	}
 
-	static double monteCarloIntegral(Function<Double, Double> fn, double a, double b) {
+	static double monteCarloIntegral(Function<Double, Double> fn, double a, double b) throws IOException {
+		double[] val = new double[SAMPLING_SIZE];
+		double[] idx = new double[SAMPLING_SIZE];
 		SummaryStatistics ret = new SummaryStatistics();
-		for (long i = 0; i < SAMPLING_SIZE; i++) {
+		for (int i = 0; i < SAMPLING_SIZE; i++) {
 			double x = ThreadLocalRandom.current().nextDouble(a, b);
-			ret.addValue(fn.apply(x));
+			double y = fn.apply(x);
+			ret.addValue(y);
+			val[i] = ret.getMean() * (b - a);
+			idx[i] = i;
 		}
+		DrawingUtils.drawSampling(val, idx, "tmp/mci" + name.incrementAndGet() + ".png",
+				new String[] { "Sampling", "F(x)", "F(X)" });
 		return ret.getMean() * (b - a);
 	}
 
-	static double rejectionSampling(Function<Double, Double> fnP, Function<Double, Double> fnOut, double a, double b) {
+	static double rejectionSampling(Function<Double, Double> fnP, Function<Double, Double> fnOut, double a, double b)
+			throws IOException {
+		double[] val = new double[SAMPLING_SIZE];
+		double[] idx = new double[SAMPLING_SIZE];
 		SummaryStatistics ret = new SummaryStatistics();
 		ThreadLocalRandom rnd = ThreadLocalRandom.current();
 		int all = 0;
@@ -71,15 +86,22 @@ public class Sampling {
 			double q = M * fnOut.apply(x);
 			if (rnd.nextDouble() < (p / q)) {
 				ret.addValue(p);
+				val[i] = ret.getMean() * (b - a);
+				idx[i] = i;
 				i++;
 			}
 		}
 		System.out.println("When M = " + M + ", Total Sampling Turn: " + all + "; Approved Turn: " + SAMPLING_SIZE);
+		DrawingUtils.drawSampling(val, idx, "tmp/rs" + name.incrementAndGet() + ".png",
+				new String[] { "Sampling", "F(x)", "F(X)" });
 		return ret.getMean() * (b - a);
 	}
 
 	static double adaptiveRejectionSampling(Function<Double, Double> pdf, Function<Double, Double> logPdf,
-			Function<Double, Double> derivativePdf, int num, int sample_size, double lower, double upper) {
+			Function<Double, Double> derivativePdf, int num, int sample_size, double lower, double upper)
+			throws IOException {
+		double[] val = new double[SAMPLING_SIZE];
+		double[] idx = new double[SAMPLING_SIZE];
 		ARS sampler = new ARS(logPdf, derivativePdf);
 		double step = (upper - lower) / (num - 1 + 2);
 		for (double i = lower + step; i < upper; i += step) {
@@ -90,16 +112,21 @@ public class Sampling {
 		SummaryStatistics sum = new SummaryStatistics();
 		for (int i = 0; i < sample_size; i++) {
 			double x = sampler.sample();
-			sum.addValue(pdf.apply(x));
+			Double y = pdf.apply(x);
+			sum.addValue(y);
+			val[i] = sum.getMean() * (upper - lower);
+			idx[i] = i;
 			if (i % 100 == 0) {
 				System.out.println("sampling[" + i + "] = " + sum.getMean() * (upper - lower));
 			}
 		}
+		DrawingUtils.drawSampling(val, idx, "tmp/ars" + name.incrementAndGet() + ".png",
+				new String[] { "Sampling", "F(x)", "F(X)" });
 		return sum.getMean() * (upper - lower);
 	}
 
 	static void importantSampling(Function<Double, Double> fnP, double a, double b) {
-
+		
 	}
 
 }
@@ -212,7 +239,10 @@ class ARS {
 	}
 
 	public double sValue(int i, double u) {
-		double xi1 = xPoints.get(i + 1);
+		double xi1 = xPoints.get(xPoints.size() - 1);
+		if (i + 1 < xPoints.size()) {
+			xi1 = xPoints.get(i + 1);
+		}
 		double ret = z.apply(i) + (1 / dh.apply(xi1))
 				* FastMath.log(1 + dh.apply(xi1) * cNorm.get() * (u - sCum.apply(i)) / FastMath.exp(hU.apply(i)));
 		return ret;
