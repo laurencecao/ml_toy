@@ -57,7 +57,7 @@ public class Sampling {
 		r = adaptiveRejectionSampling(fIn, flog, fdlog, 100, SAMPLING_SIZE, -0.5d, 2d);
 		System.out.println("adaptive rejection sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx ===> " + r);
 
-		r = importantSampling(fIn, -0.5d, 2d);
+		r = importanceSampling(fIn, -0.5d, 2d);
 		System.out.println("importance sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx  ===> " + r);
 	}
 
@@ -129,7 +129,7 @@ public class Sampling {
 		return sum.getMean() * (upper - lower);
 	}
 
-	static double importantSampling(Function<Double, Double> fnY, double a, double b) throws IOException {
+	static double importanceSampling(Function<Double, Double> fnY, double a, double b) throws IOException {
 		double[] val = new double[SAMPLING_SIZE];
 		double[] idx = new double[SAMPLING_SIZE];
 		SummaryStatistics ret = new SummaryStatistics();
