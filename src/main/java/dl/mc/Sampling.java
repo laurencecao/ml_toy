@@ -43,18 +43,22 @@ public class Sampling {
 	};
 
 	public static void main(String[] args) throws IOException {
-		double r = monteCarloIntegral(sin, 0, FastMath.PI);
-		System.out.println("∫0->PI sin(x) dx  ===> " + r);
+		double r = 0d;
+		r = monteCarloIntegral(sin, 0, FastMath.PI);
+		System.out.println("∫0->PI sin(x) dx ===> " + r);
 
 		// range = (-0.5, 2)
 		// extrema = 8 when x = 1
 		r = rejectionSampling(fIn, fOut, -0.5d, 2d);
-		System.out.println("rejection sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx  ===> " + r);
+		System.out.println("rejection sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx ===> " + r);
 		r = monteCarloIntegral(fIn, -0.5d, 2d);
-		System.out.println("monte carlo integral: ∫-0.5->2 -3 * (x-1)^2 + 8 dx  ===> " + r);
+		System.out.println("monte carlo integral: ∫-0.5->2 -3 * (x-1)^2 + 8 dx ===> " + r);
 
 		r = adaptiveRejectionSampling(fIn, flog, fdlog, 100, SAMPLING_SIZE, -0.5d, 2d);
-		System.out.println("adaptive rejection sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx  ===> " + r);
+		System.out.println("adaptive rejection sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx ===> " + r);
+
+		r = importantSampling(fIn, -0.5d, 2d);
+		System.out.println("importance sampling: ∫-0.5->2 -3 * (x-1)^2 + 8 dx  ===> " + r);
 	}
 
 	static double monteCarloIntegral(Function<Double, Double> fn, double a, double b) throws IOException {
@@ -125,8 +129,29 @@ public class Sampling {
 		return sum.getMean() * (upper - lower);
 	}
 
-	static void importantSampling(Function<Double, Double> fnP, double a, double b) {
-		
+	static double importantSampling(Function<Double, Double> fnY, double a, double b) throws IOException {
+		double[] val = new double[SAMPLING_SIZE];
+		double[] idx = new double[SAMPLING_SIZE];
+		SummaryStatistics ret = new SummaryStatistics();
+		ThreadLocalRandom rnd = ThreadLocalRandom.current();
+		double lower = -2d;
+		double upper = 8d;
+		for (int i = 0; i < SAMPLING_SIZE; i++) {
+			// original uniform distribution at [a, b]
+			Double p = 1d / (b - a);
+			// using another uniform distribution to estimate origin P(X)
+			double x = rnd.nextDouble(lower, upper);
+			// set to zero at (-∞, a) && (b, +∞)
+			p = (x < a || x > b) ? 0 : p;
+			double q = 1d / (upper - lower);
+			double y = fnY.apply(x) * (p / q);
+			ret.addValue(y);
+			val[i] = ret.getMean() * (b - a);
+			idx[i] = i;
+		}
+		DrawingUtils.drawSampling(val, idx, "tmp/is" + name.incrementAndGet() + ".png",
+				new String[] { "Sampling", "F(x)", "F(X)" });
+		return ret.getMean() * (b - a);
 	}
 
 }
