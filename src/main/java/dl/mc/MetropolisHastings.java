@@ -24,19 +24,20 @@ public class MetropolisHastings {
 
 	public static void main(String[] args) throws IOException {
 		int TURN = 100000;
+		int BURN = Double.valueOf(0.1d * TURN).intValue();
 		List<Double> r = null;
 		long ts = System.currentTimeMillis();
 		r = MH(compressedBETA, TURN);
 		long mhTs = System.currentTimeMillis() - ts;
 
 		List<Double> r1 = null;
-		r1 = r.subList(Double.valueOf(TURN * 0.999).intValue(), TURN - 1);
+		r1 = r.subList(TURN - 10, TURN);
 		System.out.println("Beta(" + alpha + "," + beta + "): \n" + r1);
 
-		Double[] rrr = r.toArray(new Double[r.size()]);
+		Double[] rrr = r.subList(BURN, TURN).toArray(new Double[TURN - BURN]);
 		double[] mh = ArrayUtils.toPrimitive(rrr);
 		ts = System.currentTimeMillis();
-		double[] bt = realBeta(TURN, alpha, beta);
+		double[] bt = realBeta(TURN - BURN, alpha, beta);
 		long betaTs = System.currentTimeMillis() - ts;
 		System.out.println("Sampling[" + TURN + "] MH: " + mhTs + "ms, BETA: " + betaTs + "ms");
 		DrawingUtils.drawHistogram(Arrays.asList("MH", "BETA"), Arrays.asList(mh, bt), new double[] { 25d, 0d, 1d },
