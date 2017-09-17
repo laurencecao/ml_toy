@@ -15,10 +15,11 @@ import utils.DrawingUtils;
 
 public class MetropolisHastings {
 
-	final static double alpha = 10;
-	final static double beta = 10;
+	final static double alpha = 2d;
+	final static double beta = 4d;
 	final static Function<Double, Double> compressedBETA = x -> {
-		return FastMath.pow(x, alpha) * FastMath.pow(1 - x, beta);
+		double ret = (alpha - 1) * FastMath.log(x) + (beta - 1) * FastMath.log(1 - x);
+		return FastMath.exp(ret);
 	};
 
 	public static void main(String[] args) throws IOException {
@@ -55,7 +56,7 @@ public class MetropolisHastings {
 			next = rng.nextDouble();
 			Double pNow = fnP.apply(state);
 			Double pNext = fnP.apply(next);
-			// notice: qij = qji
+			// notice: Q_ij = Q_ji
 			double accept = pNext / pNow;
 			if (accept >= 1 || rng.nextDouble() < accept) {
 				state = next;
