@@ -6,12 +6,17 @@ import static guru.nidi.graphviz.model.Factory.node;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.knowm.xchart.BitmapEncoder;
 import org.knowm.xchart.BitmapEncoder.BitmapFormat;
+import org.knowm.xchart.CategoryChart;
+import org.knowm.xchart.CategoryChartBuilder;
+import org.knowm.xchart.Histogram;
 import org.knowm.xchart.QuickChart;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYChartBuilder;
@@ -131,6 +136,20 @@ public class DrawingUtils {
 
 	public static void drawSampling(double[] err, double[] epoch, String path, String[] title) throws IOException {
 		XYChart chart = QuickChart.getChart(title[0], "Epoch", title[1], title[2], epoch, err);
+		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
+	}
+
+	public static void drawHistogram(List<String> title, List<double[]> err, double[] range, String path)
+			throws IOException {
+		CategoryChart chart = new CategoryChartBuilder().title("Histogram").xAxisTitle("X").yAxisTitle("Y").build();
+		chart.getStyler().setLegendPosition(LegendPosition.InsideNW);
+		chart.getStyler().setAvailableSpaceFill(.96);
+		chart.getStyler().setOverlapped(true);
+		for (int i = 0; i < err.size(); i++) {
+			List<Double> v = Arrays.asList(ArrayUtils.toObject(err.get(i)));
+			Histogram histogram1 = new Histogram(v, Double.valueOf(range[0]).intValue(), range[1], range[2]);
+			chart.addSeries(title.get(i), histogram1.getxAxisData(), histogram1.getyAxisData());
+		}
 		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
 	}
 
