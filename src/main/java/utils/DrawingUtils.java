@@ -3,6 +3,9 @@ package utils;
 import static guru.nidi.graphviz.model.Factory.graph;
 import static guru.nidi.graphviz.model.Factory.node;
 
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,6 +13,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.knowm.xchart.BitmapEncoder;
@@ -36,6 +43,9 @@ import guru.nidi.graphviz.model.Graph;
 import guru.nidi.graphviz.model.Label;
 import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.Node;
+import smile.plot.Histogram3D;
+import smile.plot.Palette;
+import smile.plot.PlotCanvas;
 
 public class DrawingUtils {
 
@@ -153,4 +163,42 @@ public class DrawingUtils {
 		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
 	}
 
+	public static void draw3DHistogram(String[] title, int bin, double[][] data1, double[][] data2, String path) {
+		Histo3D p = Histo3D.create(title, data1, data2, bin);
+		JFrame frame = new JFrame();
+		frame.getContentPane().add(p);
+		frame.setPreferredSize(new Dimension(2048, 1080));
+		frame.pack();
+		Histo3D.saveImage(p, path);
+		frame.dispose();
+	}
+
+}
+
+class Histo3D extends JPanel {
+	private static final long serialVersionUID = 1L;
+
+	private Histo3D(double[][] data, double[][] data2, String[] title, int bin) {
+		super(new GridLayout(1, 2));
+		PlotCanvas canvas = Histogram3D.plot(data, bin, Palette.jet(24));
+		canvas.setTitle(title[0]);
+		add(canvas);
+		canvas = Histogram3D.plot(data2, bin, Palette.jet(24));
+		canvas.setTitle(title[1]);
+		add(canvas);
+	}
+
+	public static Histo3D create(String[] title, double[][] data1, double[][] data2, int bin) {
+		return new Histo3D(data1, data2, title, bin);
+	}
+
+	static void saveImage(JPanel panel, String path) {
+		BufferedImage img = new BufferedImage(panel.getWidth(), panel.getHeight(), BufferedImage.TYPE_INT_RGB);
+		panel.paint(img.getGraphics());
+		try {
+			ImageIO.write(img, "png", new File(path));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }

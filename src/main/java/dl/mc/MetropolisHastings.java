@@ -52,7 +52,6 @@ public class MetropolisHastings {
 		ArrayList<Double> ret = new ArrayList<Double>();
 		ret.add(state);
 		Double next = null;
-		int total = 0;
 		for (int i = 0; i < turn; i++) {
 			next = rng.nextDouble();
 			Double pNow = fnP.apply(state);
@@ -64,7 +63,6 @@ public class MetropolisHastings {
 			}
 			ret.add(state);
 		}
-		System.out.println("Total Sampling Turn: " + total);
 		return ret;
 	}
 
