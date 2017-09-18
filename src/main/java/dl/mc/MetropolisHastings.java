@@ -53,7 +53,7 @@ public class MetropolisHastings {
 		ret.add(state);
 		Double next = null;
 		int total = 0;
-		for (int i = 0; i < turn; total++) {
+		for (int i = 0; i < turn; i++) {
 			next = rng.nextDouble();
 			Double pNow = fnP.apply(state);
 			Double pNext = fnP.apply(next);
@@ -61,9 +61,8 @@ public class MetropolisHastings {
 			double accept = pNext / pNow;
 			if (accept >= 1 || rng.nextDouble() < accept) {
 				state = next;
-				ret.add(state);
-				i++;
 			}
+			ret.add(state);
 		}
 		System.out.println("Total Sampling Turn: " + total);
 		return ret;
