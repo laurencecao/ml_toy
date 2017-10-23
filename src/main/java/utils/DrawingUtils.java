@@ -173,6 +173,18 @@ public class DrawingUtils {
 		frame.dispose();
 	}
 
+	public static void drawMultiScatter(String[] title, List<double[][]> data, String path) throws IOException {
+		XYChart chart = new XYChartBuilder().build();
+		chart.getStyler().setDefaultSeriesRenderStyle(XYSeriesRenderStyle.Scatter);
+		chart.getStyler().setChartTitleVisible(false);
+		chart.getStyler().setLegendPosition(LegendPosition.InsideSW);
+		// chart.getStyler().setMarkerSize(16);
+		for (int i = 0; i < data.size(); i++) {
+			chart.addSeries(title[i], data.get(i)[0], data.get(i)[1]);
+		}
+		BitmapEncoder.saveBitmapWithDPI(chart, path, BitmapFormat.PNG, 300);
+	}
+
 }
 
 class Histo3D extends JPanel {
