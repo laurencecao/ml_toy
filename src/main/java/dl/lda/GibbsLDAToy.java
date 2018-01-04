@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -19,14 +22,12 @@ import dataset.NewsCorpus;
 
 public class GibbsLDAToy {
 
-	final static String CORPUS = "src/main/resources/constellation/corpus.dat";
-	final static String MODEL_PATH = "tmp/toyldamodel.dat";
-	final static String MODEL_DIR = "tmp";
+	final static String CORPUS = "src/main/resources/constellation/corpus.lda";
 	final static int SNAPTIME = 100;
 
 	final static double alpha = 1d;
 	final static double beta = 1d;
-	final static int TOPIC_K = 12;
+	final static int TOPIC_K = 3;
 
 	public static void main(String[] args) throws IOException {
 		List<NewsCorpus> toy = null;
@@ -75,10 +76,19 @@ public class GibbsLDAToy {
 			String line;
 			String[] words;
 			while ((line = br.readLine()) != null) {
-				words = line.trim().split("\t");
+				words = line.trim().split(" ");
 				NewsCorpus cor = new NewsCorpus();
-				cor.words = ArrayUtils
-						.toObject(Arrays.asList(words).stream().mapToInt(x -> Integer.valueOf(x.trim())).toArray());
+				List<Integer> terms = new ArrayList<Integer>();
+				for (String w : words) {
+					if (w.contains(":")) {
+						Integer term = Integer.valueOf(w.split(":")[0]);
+						Integer count = Integer.valueOf(w.split(":")[1]);
+						Integer[] arr = new Integer[count];
+						Arrays.fill(arr, term);
+						terms.addAll(Arrays.asList(arr));
+					}
+				}
+				cor.words = terms.toArray(new Integer[terms.size()]);
 				ret.add(cor);
 			}
 		}
@@ -87,11 +97,10 @@ public class GibbsLDAToy {
 
 	static ToyLDAModel training(List<NewsCorpus> data) throws IOException {
 		ToyLDAModel ret = null;
-		ret = ToyLDAModel.loadModel(MODEL_PATH);
 		if (ret == null) {
 			ret = initRandomized(data);
 		}
-		for (int i = 0; i < 100000; i++) {
+		for (int i = 0; i < 10000; i++) {
 			long ts = System.currentTimeMillis();
 			for (int m = 0; m < ret.data.size(); m++) {
 				Integer[] words = ret.data.get(m);
@@ -102,42 +111,42 @@ public class GibbsLDAToy {
 			estimate(ret);
 			ts = System.currentTimeMillis() - ts;
 			if (i % SNAPTIME == 0) {
-				System.out.println("checkpoint at [" + i + "]");
-				ToyLDAModel.saveModel(ret, i, MODEL_PATH);
-				ToyLDAModel.dumpW2TImage(ret, MODEL_DIR);
+				System.out.println("turn " + i + " --> " + ts + "ms");
 			}
-			System.out.println("turn " + i + " --> " + ts + "ms");
 		}
 		return ret;
 	}
 
-	static List<Integer[]> convertDoc(List<NewsCorpus> data) {
-		List<Integer[]> ret = new ArrayList<Integer[]>();
+	static int convertDoc(List<NewsCorpus> data, List<Integer[]> voc) {
+		Set<Integer> ret = new HashSet<Integer>();
 		for (int i = 0; i < data.size(); i++) {
 			NewsCorpus c = data.get(i);
-			ret.add(c.words);
+			voc.add(c.words);
+			ret.addAll(Arrays.asList(c.words));
 		}
-		return ret;
+		return Collections.max(ret) + 1;
 	}
 
 	static ToyLDAModel initRandomized(List<NewsCorpus> data) {
-		ToyLDAModel ret = new ToyLDAModel(alpha, beta, TOPIC_K, convertDoc(data));
-		ret.z = new ArrayList<Integer[]>();
+		List<Integer[]> corpus = new ArrayList<Integer[]>();
+		int V = convertDoc(data, corpus);
+		int N = corpus.get(0).length;
+		int D = corpus.size();
+		ToyLDAModel ret = new ToyLDAModel(alpha, beta, TOPIC_K, V, D, N, corpus);
 		for (int i = 0; i < ret.data.size(); i++) {
 			// i -> docId
 			Integer[] c = ret.data.get(i);
-			Integer[] theZ = new Integer[c.length];
 			for (int j = 0; j < c.length; j++) {
 				// j -> word index
-				theZ[j] = ThreadLocalRandom.current().nextInt(TOPIC_K);
-				double cc = ret.zCount.getEntry(theZ[j]) + 1;
-				ret.zCount.setEntry(theZ[j], cc);
-				cc = ret.docTopicCount.getEntry(i, theZ[j]) + 1;
-				ret.docTopicCount.setEntry(i, theZ[j], cc);
-				cc = ret.wordTopicCount.getEntry(c[j], theZ[j]) + 1;
-				ret.wordTopicCount.setEntry(c[j], theZ[j], cc);
+				int z = ThreadLocalRandom.current().nextInt(TOPIC_K);
+				ret.z.setEntry(j, i, z);
+				double cc = ret.zCount.getEntry(z);
+				ret.zCount.setEntry(z, cc + 1);
+				cc = ret.docTopicCount.getEntry(i, z);
+				ret.docTopicCount.setEntry(i, z, cc + 1);
+				cc = ret.wordTopicCount.getEntry(c[j], z);
+				ret.wordTopicCount.setEntry(c[j], z, cc + 1);
 			}
-			ret.z.add(theZ);
 		}
 		return ret;
 	}
@@ -166,24 +175,24 @@ public class GibbsLDAToy {
 	 * </pre>
 	 */
 	static int gibbsSample(ToyLDAModel model, int docId, int wordIdx) {
-		int z = model.z.get(docId)[wordIdx];
+		int z = Double.valueOf(model.z.getEntry(wordIdx, docId)).intValue();
 		int word = model.data.get(docId)[wordIdx];
 		double count = 0;
-		count = model.docTopicCount.getEntry(docId, z) - 1;
+		count = model.docTopicCount.getEntry(docId, z);
 		if (count < 0) {
 			System.out.println("aaaa");
 		}
-		model.docTopicCount.setEntry(docId, z, count);
-		count = model.wordTopicCount.getEntry(word, z) - 1;
+		model.docTopicCount.setEntry(docId, z, count - 1);
+		count = model.wordTopicCount.getEntry(word, z);
 		if (count < 0) {
 			System.out.println("bbbb");
 		}
-		model.wordTopicCount.setEntry(word, z, count);
-		count = model.zCount.getEntry(z) - 1;
+		model.wordTopicCount.setEntry(word, z, count - 1);
+		count = model.zCount.getEntry(z);
 		if (count < 0) {
 			System.out.println("cccc");
 		}
-		model.zCount.setEntry(z, count);
+		model.zCount.setEntry(z, count - 1);
 
 		List<Pair<Integer, Double>> items = new ArrayList<Pair<Integer, Double>>();
 		// iterate at Z
@@ -204,7 +213,7 @@ public class GibbsLDAToy {
 			double w2t_all = iden.dotProduct(v);
 
 			double A = (d2t_d + model.alpha) / (d2t_all + model.K * model.alpha);
-			double B = (w2t_w + model.beta) / (w2t_all + model.W * model.beta);
+			double B = (w2t_w + model.beta) / (w2t_all + model.V * model.beta);
 
 			if (A * B < 0) {
 				System.out.println("ERROR: " + A * B);
@@ -217,7 +226,7 @@ public class GibbsLDAToy {
 
 		count = model.docTopicCount.getEntry(docId, z) + 1;
 		model.docTopicCount.setEntry(docId, z, count);
-		model.z.get(docId)[wordIdx] = z;
+		model.z.setEntry(wordIdx, docId, z);
 		count = model.wordTopicCount.getEntry(word, z) + 1;
 		model.wordTopicCount.setEntry(word, z, count);
 		count = model.zCount.getEntry(z) + 1;
@@ -271,7 +280,7 @@ public class GibbsLDAToy {
 				v = model.wordTopicCount.getColumnVector(z);
 				double w2t_all = iden.dotProduct(v);
 
-				double B = (w2t_w + model.beta) / (w2t_all + model.W * model.beta);
+				double B = (w2t_w + model.beta) / (w2t_all + model.V * model.beta);
 				model.phi.setEntry(w, z, B);
 			}
 		}

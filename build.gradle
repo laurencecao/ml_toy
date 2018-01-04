@@ -38,8 +38,11 @@ dependencies {
 	compile group: 'org.knowm.xchart', name: 'xchart', version: '3.5.0'
 	compile group: 'com.github.haifengl', name: 'smile-plot', version: '1.4.0'
 	compile group: 'ca.umontreal.iro.simul', name: 'ssj', version: '3.2.1'
-        compile group: 'cc.mallet', name: 'mallet', version: '2.0.8'
+    compile group: 'cc.mallet', name: 'mallet', version: '2.0.8'
 	compile group: 'org.ranksys', name: 'RankSys-lda', version: '0.4.3'
+
+	compile group: 'com.github.yannrichet', name: 'JMathPlot', version: '1.0.1'
+	compile group: 'de.erichseifert.gral', name: 'gral-core', version: '0.11'
 
 //	compile 'com.google.guava:guava:23.0'
 //	compile group: 'gov.nist.math', name: 'jama', version: '1.0.3'
