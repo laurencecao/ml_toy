@@ -142,6 +142,9 @@ public class ImageUtils {
 					}
 					String msg = "α:" + (nodes[i].alpha == Integer.MIN_VALUE ? "-Nan" : nodes[i].alpha) + "\nβ:"
 							+ (nodes[i].beta == Integer.MAX_VALUE ? "+Nan" : nodes[i].beta);
+					if (layer == gap.length - 1) {
+						msg = "" + nodes[i].score;
+					}
 					int[] base = gap[layer];
 					data[i] = graph.insertVertex(parent, null, msg, base[0], height * (layer * 2), weight, height);
 					base[0] += base[1];
