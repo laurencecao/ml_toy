@@ -5,6 +5,8 @@ import java.util.Arrays;
 
 import org.apache.commons.math3.util.FastMath;
 
+import utils.ImageUtils;
+
 public class AlphaBetaPruning {
 
 	final static int leaves[] = {
@@ -75,6 +77,19 @@ public class AlphaBetaPruning {
 		Decision root = tree[0];
 		int ret = maxValue(tree, root.id, Integer.MIN_VALUE, Integer.MAX_VALUE);
 		System.out.println("Root: " + "alpha => " + ret);
+		int w = 35;
+		int h = 35;
+		ImageUtils.drawAlphaBetaTree(tree, "tmp/ab_tree.jpeg", 4, 27, w, h, new int[][] {
+
+				{ (w + 10) * 27 / 2 - w / 2, 0 },
+
+				{ (w + 10) * 27 / 6 - w / 2, (w + 10) * 27 / 6 * 2 },
+
+				{ (w + 10) * 27 / 18 - w / 2, (w + 10) * 27 / 18 * 2 },
+
+				{ 10, w + 10 }
+
+		});
 	}
 
 	static int maxValue(Decision[] tree, int state, int alpha, int beta) {
@@ -133,26 +148,6 @@ public class AlphaBetaPruning {
 		if (force || (beta < node.beta && beta >= node.alpha)) {
 			node.beta = beta;
 		}
-	}
-
-}
-
-class Decision {
-
-	int id;
-	boolean isMax;
-
-	Integer score;
-	int alpha = Integer.MIN_VALUE;
-	int beta = Integer.MAX_VALUE;
-
-	Integer parent;
-	Integer[] successors;
-
-	public Decision(int id, boolean isMax, int parent) {
-		this.id = id;
-		this.isMax = isMax;
-		this.parent = parent;
 	}
 
 }

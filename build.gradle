@@ -2,6 +2,7 @@ repositories {
     maven { url "http://repo2.maven.org/maven2/" }
     maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
 //    jcenter()
+    maven { url "https://repository-chiralbehaviors.forge.cloudbees.com/snapshot/" }    
     mavenLocal()
     maven { url "https://jitpack.io" }
 }
@@ -43,6 +44,7 @@ dependencies {
 
 	compile group: 'com.github.yannrichet', name: 'JMathPlot', version: '1.0.1'
 	compile group: 'de.erichseifert.gral', name: 'gral-core', version: '0.11'
+        compile group: 'com.mxgraph', name: 'jgraphx', version: '3.7.5'
 
 //	compile 'com.google.guava:guava:23.0'
 //	compile group: 'gov.nist.math', name: 'jama', version: '1.0.3'

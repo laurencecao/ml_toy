@@ -1,5 +1,6 @@
 package utils;
 
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -8,9 +9,15 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.util.FastMath;
+
+import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.view.mxGraph;
+
+import dl.alphabeta.Decision;
 
 public class ImageUtils {
 
@@ -112,6 +119,61 @@ public class ImageUtils {
 			sb.append("\n");
 		}
 		return sb.toString();
+	}
+
+	static class TinyGraphTree extends JFrame {
+
+		private static final long serialVersionUID = 1L;
+
+		public TinyGraphTree(Decision[] nodes, int weight, int height, int[][] gap) {
+			Object[] data = new Object[nodes.length];
+			mxGraph graph = new mxGraph();
+			Object parent = graph.getDefaultParent();
+
+			graph.getModel().beginUpdate();
+			try {
+				int layer = 0;
+				boolean ismax = true;
+				for (int i = 0; i < nodes.length; i++) {
+					assert nodes[i] != null;
+					if (nodes[i].isMax != ismax) {
+						layer++;
+						ismax = !ismax;
+					}
+					String msg = "α:" + (nodes[i].alpha == Integer.MIN_VALUE ? "-Nan" : nodes[i].alpha) + "\nβ:"
+							+ (nodes[i].beta == Integer.MAX_VALUE ? "+Nan" : nodes[i].beta);
+					int[] base = gap[layer];
+					data[i] = graph.insertVertex(parent, null, msg, base[0], height * (layer * 2), weight, height);
+					base[0] += base[1];
+				}
+				for (int i = 1; i < nodes.length; i++) {
+					Integer np = nodes[i].parent;
+					graph.insertEdge(parent, null, "", data[np], data[i]);
+				}
+			} finally {
+				graph.getModel().endUpdate();
+			}
+			mxGraphComponent graphComponent = new mxGraphComponent(graph);
+			getContentPane().add(graphComponent);
+		}
+	}
+
+	public static void drawAlphaBetaTree(Decision[] nodes, String path, int layer, int leaf, int width, int height,
+			int[][] gap) {
+		TinyGraphTree frame = new TinyGraphTree(nodes, width, height, gap);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize((width + 10) * leaf + 10 * 2, height * layer * 2 + height);
+		frame.setVisible(true);
+		try {
+			BufferedImage image = new BufferedImage((width + 10) * leaf + 10 * 2, height * layer * 2 + height,
+					BufferedImage.TYPE_INT_RGB);
+			Graphics2D graphics2D = image.createGraphics();
+			frame.paint(graphics2D);
+			ImageIO.write(image, "jpeg", new File(path));
+		} catch (Exception exception) {
+			// code
+		}
+		frame.dispose();
 	}
 
 	public static void main(String[] args) throws Exception {
