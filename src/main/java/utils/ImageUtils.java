@@ -146,7 +146,8 @@ public class ImageUtils {
 						msg = "" + nodes[i].score;
 					}
 					int[] base = gap[layer];
-					data[i] = graph.insertVertex(parent, null, msg, base[0], height * (layer * 2), weight, height);
+					data[i] = graph.insertVertex(parent, null, msg, base[0], height * (layer * 2) + height / 2, weight,
+							height);
 					base[0] += base[1];
 				}
 				for (int i = 1; i < nodes.length; i++) {
