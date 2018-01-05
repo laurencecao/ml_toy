@@ -81,11 +81,11 @@ public class AlphaBetaPruning {
 		int h = 35;
 		ImageUtils.drawAlphaBetaTree(tree, "tmp/ab_tree.jpeg", layer, leaves.length, w, h, new int[][] {
 
-				{ 10 + (w + 10) * 27 / 2 - w / 2, 0 },
+				{ 10 + (w + 10) * leaves.length / 2 - w / 2, 0 },
 
-				{ 10 + (w + 10) * 27 / 6 - w / 2, (w + 10) * 27 / 6 * 2 },
+				{ 10 + (w + 10) * leaves.length / 6 - w / 2, (w + 10) * leaves.length / 6 * 2 },
 
-				{ 10 + (w + 10) * 27 / 18 - w / 2, (w + 10) * 27 / 18 * 2 },
+				{ 10 + (w + 10) * leaves.length / 18 - w / 2, (w + 10) * leaves.length / 18 * 2 },
 
 				{ 10, w + 10 }
 
