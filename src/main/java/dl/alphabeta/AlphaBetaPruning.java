@@ -9,6 +9,7 @@ import utils.ImageUtils;
 
 public class AlphaBetaPruning {
 
+	final static int layer = 4;
 	final static int leaves[] = {
 
 			-3, -4, -4,
@@ -32,13 +33,12 @@ public class AlphaBetaPruning {
 	};
 
 	public static void main(String[] args) {
-		Decision[] trie = init(leaves);
-		alphaBetaPlay(trie);
+		Decision[] trie = init(leaves, layer);
+		alphaBetaPlay(trie, layer);
 		printTree(trie);
 	}
 
-	static Decision[] init(int[] leaf) {
-		int layer = 4;
+	static Decision[] init(int[] leaf, int layer) {
 		int total = 0;
 		for (int i = 0; i < layer; i++) {
 			total += Double.valueOf(FastMath.pow(3, i)).intValue();
@@ -73,13 +73,13 @@ public class AlphaBetaPruning {
 		}
 	}
 
-	static void alphaBetaPlay(Decision[] tree) {
+	static void alphaBetaPlay(Decision[] tree, int layer) {
 		Decision root = tree[0];
 		int ret = maxValue(tree, root.id, Integer.MIN_VALUE, Integer.MAX_VALUE);
 		System.out.println("Root: " + "alpha => " + ret);
 		int w = 35;
 		int h = 35;
-		ImageUtils.drawAlphaBetaTree(tree, "tmp/ab_tree.jpeg", 4, 27, w, h, new int[][] {
+		ImageUtils.drawAlphaBetaTree(tree, "tmp/ab_tree.jpeg", layer, leaves.length, w, h, new int[][] {
 
 				{ 10 + (w + 10) * 27 / 2 - w / 2, 0 },
 
