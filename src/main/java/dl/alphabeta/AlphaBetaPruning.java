@@ -69,7 +69,7 @@ public class AlphaBetaPruning {
 		for (int i = 0; i < tree.length; i++) {
 			System.out.println(tree[i].id + "@" + tree[i].parent + " {" + (tree[i].isMax ? "MAX" : "MIN") + "} " + "==>"
 					+ Arrays.toString(tree[i].successors) + "-->" + tree[i].score + "; alpha => " + tree[i].alpha
-					+ "; beta => " + tree[i].beta);
+					+ "; beta => " + tree[i].beta + " ; pruning: " + tree[i].pruning);
 		}
 	}
 
@@ -81,11 +81,11 @@ public class AlphaBetaPruning {
 		int h = 35;
 		ImageUtils.drawAlphaBetaTree(tree, "tmp/ab_tree.jpeg", 4, 27, w, h, new int[][] {
 
-				{ (w + 10) * 27 / 2 - w / 2, 0 },
+				{ 10 + (w + 10) * 27 / 2 - w / 2, 0 },
 
-				{ (w + 10) * 27 / 6 - w / 2, (w + 10) * 27 / 6 * 2 },
+				{ 10 + (w + 10) * 27 / 6 - w / 2, (w + 10) * 27 / 6 * 2 },
 
-				{ (w + 10) * 27 / 18 - w / 2, (w + 10) * 27 / 18 * 2 },
+				{ 10 + (w + 10) * 27 / 18 - w / 2, (w + 10) * 27 / 18 * 2 },
 
 				{ 10, w + 10 }
 
@@ -102,9 +102,11 @@ public class AlphaBetaPruning {
 		int b = beta;
 		updateAlpha(node, a, false);
 		updateBeta(node, b, false);
+		node.pruning.addAll(Arrays.asList(node.successors));
 		for (Integer id : node.successors) {
 			assert id != null;
 			a = FastMath.max(a, minValue(tree, id, a, b));
+			node.pruning.remove(id);
 			if (a >= b) {
 				updateAlpha(node, a, true);
 				break;
@@ -124,9 +126,11 @@ public class AlphaBetaPruning {
 		int b = beta;
 		updateAlpha(node, a, false);
 		updateBeta(node, b, false);
+		node.pruning.addAll(Arrays.asList(node.successors));
 		for (Integer id : node.successors) {
 			assert id != null;
 			b = FastMath.min(b, maxValue(tree, id, a, b));
+			node.pruning.remove(id);
 			if (a >= b) {
 				updateBeta(node, b, true);
 				break;

@@ -1,5 +1,8 @@
 package dl.alphabeta;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class Decision {
 
 	public int id;
@@ -11,6 +14,7 @@ public class Decision {
 
 	public Integer parent;
 	public Integer[] successors;
+	public Set<Integer> pruning = new HashSet<Integer>();
 
 	public Decision(int id, boolean isMax, int parent) {
 		this.id = id;

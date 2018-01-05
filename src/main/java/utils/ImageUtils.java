@@ -148,7 +148,11 @@ public class ImageUtils {
 				}
 				for (int i = 1; i < nodes.length; i++) {
 					Integer np = nodes[i].parent;
-					graph.insertEdge(parent, null, "", data[np], data[i]);
+					String style = null;
+					if (nodes[np].pruning.contains(Integer.valueOf(i))) {
+						style = "dashed=true;strokeColor=#00FF00";
+					}
+					graph.insertEdge(parent, null, "", data[np], data[i], style);
 				}
 			} finally {
 				graph.getModel().endUpdate();
@@ -162,10 +166,10 @@ public class ImageUtils {
 			int[][] gap) {
 		TinyGraphTree frame = new TinyGraphTree(nodes, width, height, gap);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize((width + 10) * leaf + 10 * 2, height * layer * 2 + height);
+		frame.setSize((width + 10) * leaf + 10 * 2, height * layer * 2 + height / 2);
 		frame.setVisible(true);
 		try {
-			BufferedImage image = new BufferedImage((width + 10) * leaf + 10 * 2, height * layer * 2 + height,
+			BufferedImage image = new BufferedImage((width + 10) * leaf + 10 * 2, height * layer * 2 + height / 2,
 					BufferedImage.TYPE_INT_RGB);
 			Graphics2D graphics2D = image.createGraphics();
 			frame.paint(graphics2D);
