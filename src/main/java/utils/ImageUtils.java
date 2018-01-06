@@ -140,8 +140,8 @@ public class ImageUtils {
 						layer++;
 						ismax = !ismax;
 					}
-					String msg = "α:" + (nodes[i].alpha == Integer.MIN_VALUE ? "-Nan" : nodes[i].alpha) + "\nβ:"
-							+ (nodes[i].beta == Integer.MAX_VALUE ? "+Nan" : nodes[i].beta);
+					String msg = "α:" + (nodes[i].alpha == Integer.MIN_VALUE ? "-∞" : nodes[i].alpha) + "\nβ:"
+							+ (nodes[i].beta == Integer.MAX_VALUE ? "+∞" : nodes[i].beta);
 					if (layer == gap.length - 1) {
 						msg = "" + nodes[i].score;
 					}
