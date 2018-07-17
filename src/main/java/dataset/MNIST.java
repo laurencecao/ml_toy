@@ -2,10 +2,6 @@ package dataset;
 
 import static java.lang.String.format;
 
-import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -14,12 +10,11 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
-import javax.swing.JFrame;
-
 import org.apache.commons.io.IOUtils;
+
+import utils.SwingDisplayer;
 
 public class MNIST {
 
@@ -168,61 +163,28 @@ public class MNIST {
 		return sb.toString();
 	}
 
-	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws InterruptedException {
 		List<MNIST> tr = MNIST.getTraining();
 		System.out.println(tr.size());
 		List<MNIST> te = MNIST.getTesting();
 		System.out.println(te.size());
 
-		Consumer<List<MNIST>[]> displayer = x -> {
-			int idx = ThreadLocalRandom.current().nextInt(x[0].size());
-			MNIST mn0 = x[0].get(idx);
-			idx = ThreadLocalRandom.current().nextInt(x[1].size());
-			MNIST mn1 = x[1].get(idx);
+		int idx;
+		List<MNIST> t;
+		List<int[][]> data = new ArrayList<>();
+		t = tr;
+		for (int i = 0; i < 8; i++) {
+			idx = ThreadLocalRandom.current().nextInt(t.size());
+			data.add(t.get(idx).image);
+		}
+		t = te;
+		for (int i = 0; i < 8; i++) {
+			idx = ThreadLocalRandom.current().nextInt(t.size());
+			data.add(t.get(idx).image);
+		}
 
-			try {
-				final BufferedImage image0 = new BufferedImage(mn0.image.length, mn0.image[0].length,
-						BufferedImage.TYPE_USHORT_GRAY);
-				for (int i = 0; i < mn0.image.length; i++) {
-					for (int j = 0; j < mn0.image[i].length; j++) {
-						int a = mn0.image[i][j];
-						Color newColor = new Color(a, a, a);
-						image0.setRGB(j, i, newColor.getRGB());
-					}
-				}
-				final BufferedImage image1 = new BufferedImage(mn1.image.length, mn1.image[0].length,
-						BufferedImage.TYPE_USHORT_GRAY);
-				for (int i = 0; i < mn1.image.length; i++) {
-					for (int j = 0; j < mn1.image[i].length; j++) {
-						int a = mn1.image[i][j];
-						Color newColor = new Color(a, a, a);
-						image1.setRGB(j, i, newColor.getRGB());
-					}
-				}
-				class MyCanvas extends Canvas {
-					private static final long serialVersionUID = 1L;
-
-					public void paint(Graphics g) {
-						g.drawImage(image0, 120, 100, this);
-						g.drawImage(image1, 200, 200, this);
-					}
-				}
-				MyCanvas m = new MyCanvas();
-				JFrame f = new JFrame();
-				f.add(m);
-				f.setSize(400, 400);
-				f.setVisible(true);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-		};
-
-		displayer.accept(new List[] { tr, te });
-		Thread.sleep(10000);
+		SwingDisplayer.displayImages2(data, 4, 32);
 		System.exit(0);
-
 	}
 
 }
