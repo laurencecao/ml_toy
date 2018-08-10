@@ -64,6 +64,7 @@ public class XOR {
 		// l1.setBiased(0.1d);
 
 		NNModel model = new NNModel(0.5d, 0.95d);
+		model.setMinimumError(0.001d);
 		model.addLayer(l0);
 		model.addLayer(l1);
 

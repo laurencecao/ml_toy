@@ -48,12 +48,11 @@ public class NNModel {
 	protected double learningRate;
 	protected double decayRate;
 
-	protected double error;
+	protected double error = 0.0001d;
 	protected int epoch;
 
 	public NNModel(double lr, double dr) {
 		layers = new ArrayList<>();
-		// cgs = new ArrayList<>();
 		learningRate = lr;
 		decayRate = dr;
 		// optimizer = new SimpleGradientDescend(lr, dr);
@@ -68,6 +67,10 @@ public class NNModel {
 
 	public void setLossName(String name) {
 		this.lossName = name;
+	}
+
+	public void setMinimumError(double error) {
+		this.error = error;
 	}
 
 	public void addLayer(AbstractCompGraphLayer layer) {
@@ -117,7 +120,7 @@ public class NNModel {
 				String border = "**************************************";
 				System.out.println(border + "Learning epoch checkpoint: " + epoch + border);
 			}
-			if (FastMath.abs(cur - loss) < epsilon) {
+			if (FastMath.abs(cur - loss) < epsilon && cur < error) {
 				System.out.println("{" + epoch + "} epsilon ..... " + FastMath.abs(cur - loss));
 				break;
 			}
