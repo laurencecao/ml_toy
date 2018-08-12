@@ -58,7 +58,7 @@ public class MoonPlayer {
 	}
 
 	static void work(NNModel model, List<RealMatrix> x, List<RealMatrix> t) {
-		double loss = model.learning(0.001, x, t, 100, 5000);
+		double loss = model.learning(0.001, x, t, 100, 500);
 
 		int error = 0;
 		int total = 0;
@@ -99,13 +99,14 @@ public class MoonPlayer {
 		// l0.setBiased(0.1d);
 		// l1.setBiased(0.1d);
 
-		NNModel model = new NNModel(0.5d, 0.95d);
+		NNModel model = new NNModel(0.001d, 0.95d);
 		model.setMinimumError(0.001d);
 		// model.addLayer(l0);
 		model.addLayer(l1);
 
 		model.setLossName("crossentropy");
 		// model.setOptimizer(new SimpleGradientDescend(0.5d, 0.95d));
+		System.out.println(model.debugInfo());
 		return model;
 	}
 

@@ -14,16 +14,18 @@ public class XOR {
 
 	public static void main(String[] args) {
 		long ts = System.currentTimeMillis();
-//		RealMatrix x = MatrixUtils.createRealMatrix(new double[][] { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } })
-//				.transpose();
-//		RealMatrix y = MatrixUtils.createRealMatrix(new double[][] { { -1 }, { 1 }, { 1 }, { -1 } }).transpose();
+		// RealMatrix x = MatrixUtils.createRealMatrix(new double[][] { { -1, -1 }, {
+		// -1, 1 }, { 1, -1 }, { 1, 1 } })
+		// .transpose();
+		// RealMatrix y = MatrixUtils.createRealMatrix(new double[][] { { -1 }, { 1 }, {
+		// 1 }, { -1 } }).transpose();
 		RealMatrix x = MatrixUtils.createRealMatrix(new double[][] { { 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 } })
 				.transpose();
 		RealMatrix y = MatrixUtils.createRealMatrix(new double[][] { { 1 }, { 0 }, { 1 }, { 0 } }).transpose();
 
 		NNModel model = setUp();
 
-		double loss = model.learning(0.00001d, batch(x), batch(y), 100, 2000);
+		double loss = model.learning(0.00001d, batch(x), batch(y), 100, 200);
 		// double loss = model.learning(0.01d, Arrays.asList(x), Arrays.asList(y), 1,
 		// 1000);
 		ts = System.currentTimeMillis() - ts;
@@ -62,11 +64,11 @@ public class XOR {
 
 		// l0.setBiased(0.1d);
 		// l1.setBiased(0.1d);
-		
-		l0.setActivationName("tanh");
+
+		l0.setActivationName("sigmoid");
 		l1.setActivationName("sigmoid");
 
-		NNModel model = new NNModel(0.5d, 0.95d);
+		NNModel model = new NNModel(0.3d, 0.95d);
 		model.setMinimumError(0.001d);
 		model.addLayer(l0);
 		model.addLayer(l1);
