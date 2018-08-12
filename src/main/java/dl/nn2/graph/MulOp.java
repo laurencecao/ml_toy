@@ -9,10 +9,6 @@ public class MulOp extends TracedComputation {
 	final protected boolean preMul;
 	final protected String memo;
 
-	// public MulOp(MatrixDataEdge w, boolean transpose, String memo) {
-	// this(w, transpose, false, false, memo);
-	// }
-
 	public MulOp(MatrixDataEdge w, boolean transpose, boolean preMul, boolean unBiased, String memo) {
 		RealMatrix wt = w.asMat(0);
 		if (unBiased) {

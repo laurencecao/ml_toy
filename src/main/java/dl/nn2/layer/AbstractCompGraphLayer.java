@@ -6,8 +6,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.linear.RealMatrix;
 
 import dl.nn2.activation.GateFunction;
-import dl.nn2.activation.Sigmoid;
-import dl.nn2.activation.Tanh;
 import dl.nn2.graph.BiasedOp;
 import dl.nn2.graph.GateOp;
 import dl.nn2.graph.GroupComputation;
@@ -33,6 +31,8 @@ public abstract class AbstractCompGraphLayer {
 
 	abstract protected String typeName();
 
+	abstract protected GateFunction getActivationFunction();
+
 	public AbstractCompGraphLayer(int in, int out, String name) {
 		this.inSize = in;
 		this.outSize = out;
@@ -57,15 +57,11 @@ public abstract class AbstractCompGraphLayer {
 		return name + "@" + typeName();
 	}
 
-	protected GateFunction getActivationFunction() {
-		return new Tanh();
-	}
-
 	public Pair<GroupComputation, GroupComputation> build() {
 		// default dense layer
 		VarOp var = new VarOp(name + "_Z", name + "_ff_saveZ");
 		GroupComputation ff = new GroupComputation(name + "_FF", new BiasedOp(true, name),
-				new MulOp(w, false, false, false, name + "_ff"), var, new GateOp(new Sigmoid(), true, name));
+				new MulOp(w, false, false, false, name + "_ff"), var, new GateOp(getActivationFunction(), true, name));
 		ff.setAttach(this);
 
 		MulVarOp dLdz_mul_dzdy = null;
@@ -73,15 +69,15 @@ public abstract class AbstractCompGraphLayer {
 		AbstractCompGraphLayer nl = this.getNextLayer();
 		if (nl == null) {
 			dLdz_mul_dzdy = new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false,
-					true, true, "dLdz_mul_dzdy");
+					"dLdz_mul_dzdy");
 			// dL/dy * dy/dz
 			bp = new GroupComputation(name + "_BP", dLdz_mul_dzdy);
 		} else {
 			// dL/dZ * dZ/dy * dy/dz {layer(Z) == layer(y) + 1}
 			bp = new GroupComputation(name, new MulOp(nl.w, true, false, false, name + "_bp"),
 					new BiasedOp(false, name),
-					new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false, true,
-							true, "dLdz_mul_dzdy"));
+					new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false,
+							"dLdz_mul_dzdy"));
 		}
 		bp.setAttach(this);
 		return Pair.of(ff, bp);

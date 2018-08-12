@@ -6,6 +6,9 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.RealVectorChangingVisitor;
 import org.apache.commons.math3.util.FastMath;
 
+import dl.nn2.activation.Softmax;
+import dl.nn2.graph.MatrixDataEdge;
+
 public class CategoricalCrossEntropy implements LossFunction {
 
 	@Override
@@ -17,7 +20,7 @@ public class CategoricalCrossEntropy implements LossFunction {
 			vY.walkInOptimizedOrder(log);
 			ret += vT.dotProduct(vY);
 		}
-		return ret;
+		return ret / y.getColumnDimension();
 	}
 
 	static RealVectorChangingVisitor log = new RealVectorChangingVisitor() {
@@ -28,7 +31,7 @@ public class CategoricalCrossEntropy implements LossFunction {
 
 		@Override
 		public double visit(int index, double value) {
-			return FastMath.log(value);
+			return FastMath.log(value) * -1d;
 		}
 
 		@Override
@@ -49,11 +52,44 @@ public class CategoricalCrossEntropy implements LossFunction {
 		for (int i = 0; i < y.getColumnDimension(); i++) {
 			RealVector vT = target.getColumnVector(i);
 			RealVector vY = y.getColumnVector(i);
-			RealVector a = vT.ebeDivide(vY).mapMultiply(-1);
-			RealVector b = vT.mapAdd(-1).ebeDivide(vY.mapAdd(-1));
-			ret.setColumnVector(i, a.add(b));
+			ret.setColumnVector(i, vT.ebeDivide(vY).mapMultiply(-1d));
 		}
 		return ret;
+	}
+
+	public static void main(String[] args) {
+		/**
+		 * ∂L/∂z = −∑[(y * 1/p) * ∂p/∂z]
+		 * 
+		 * ∂L/∂p = −∑[(y * 1/p)]
+		 */
+		CategoricalCrossEntropy ce = new CategoricalCrossEntropy();
+		RealMatrix y = MatrixUtils.createRealMatrix(new double[][] { { 0.29450637, 0.34216758, 0.36332605 } })
+				.transpose();
+		RealMatrix t = MatrixUtils.createRealMatrix(new double[][] { { 1, 0, 0 } }).transpose();
+		double error = ce.eval(t, y);
+		System.out.println("Cross Entropy: " + error);
+		System.out.println("Derivated Cross Entropy: \n");
+		RealMatrix m = ce.dif(t, y);
+		System.out.println(MatrixDataEdge.pretty0(m));
+
+		/**
+		 * ∂p/∂z = Jacobian(D(y)S(x)) = S(x) * (1 - S(y))
+		 */
+		Softmax s = new Softmax();
+		RealMatrix m1 = s.backward(y);
+		System.out.println("Derivated Softmax: \n");
+		System.out.println(MatrixDataEdge.pretty0(m1));
+		RealMatrix m2 = m1.multiply(m);
+		System.out.println("Derivated (Cross Entropy + Softmax): \n");
+		System.out.println(MatrixDataEdge.pretty0(m2));
+
+		/**
+		 * ∂L/∂z=p−y
+		 */
+		RealMatrix m3 = y.subtract(t);
+		System.out.println("Derivated (Cross Entropy + Softmax): \n");
+		System.out.println(MatrixDataEdge.pretty0(m3));
 	}
 
 }

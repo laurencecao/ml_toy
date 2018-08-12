@@ -59,6 +59,10 @@ public class NNModel {
 		optimizer = new RMSPropOptimizer(lr, dr);
 	}
 
+	public void setOptimizer(RMSPropOptimizer opt) {
+		optimizer = opt;
+	}
+
 	void valid() {
 		if (cgs == null) {
 			throw new RuntimeException("Please compile model first!");
@@ -272,7 +276,7 @@ public class NNModel {
 			MatrixDataEdge theloss = loss.eval(output);
 			ret += theloss.asDouble(0);
 		}
-		return ret;
+		return ret / input.size();
 	}
 
 	public List<RealMatrix> predict(List<RealMatrix> input) {
