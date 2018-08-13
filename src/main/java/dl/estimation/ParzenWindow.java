@@ -22,8 +22,8 @@ public class ParzenWindow {
 		for (int i = 0; i < p.length; i++) {
 			System.out.println(MatrixUtil.pretty(p[i]));
 		}
-		String title = "[" + sz + "]Points Parzen Window Bin=" + bin + " with Normal Distribution( " + center + " , "
-				+ var + " )";
+		String title = sz + " Points Parzen Window Bin=" + bin + " with Normal Distribution( " + center + " , " + var
+				+ " )";
 		draw(samples, p, title);
 	}
 
