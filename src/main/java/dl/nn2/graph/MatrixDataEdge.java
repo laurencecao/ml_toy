@@ -1,5 +1,7 @@
 package dl.nn2.graph;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.math3.linear.RealMatrix;
@@ -17,6 +19,8 @@ public class MatrixDataEdge {
 	protected String name;
 	protected RealMatrix data;
 	protected RealMatrix _data;
+
+	protected List<RealMatrix> dList = new ArrayList<>();
 
 	protected Refresher updater;
 
@@ -71,6 +75,15 @@ public class MatrixDataEdge {
 		return data;
 	}
 
+	public List<RealMatrix> asMatList() {
+		return dList;
+	}
+
+	public void addToMatList(RealMatrix m) {
+		this.dList.add(m);
+		this.update(m);
+	}
+
 	public double asDouble(int version) {
 		if (version > 1) {
 			throw new IllegalArgumentException("version support [0,1]");
@@ -102,6 +115,13 @@ public class MatrixDataEdge {
 			this.data = data.data.copy();
 		} else {
 			this.data = null;
+		}
+		if (data.dList != null) {
+			for (RealMatrix d : data.dList) {
+				this.dList.add(d.copy());
+			}
+		} else {
+			this.dList.clear();
 		}
 		// isSameShape(this.data, this._data, this.name);
 	}

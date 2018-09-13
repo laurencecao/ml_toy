@@ -18,7 +18,7 @@ import dl.nn2.init.Xavier;
 
 public abstract class AbstractCompGraphLayer {
 
-	final protected MatrixDataEdge w;
+	protected MatrixDataEdge w;
 	protected GateFunction gate;
 
 	protected Xavier xinit = new Xavier();
@@ -33,7 +33,7 @@ public abstract class AbstractCompGraphLayer {
 
 	abstract protected GateFunction getActivationFunction();
 
-	public AbstractCompGraphLayer(int in, int out, String name) {
+	protected void init(int in, int out, String name) {
 		this.inSize = in;
 		this.outSize = out;
 		this.name = name;

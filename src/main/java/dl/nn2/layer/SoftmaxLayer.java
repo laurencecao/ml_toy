@@ -19,7 +19,7 @@ public class SoftmaxLayer extends AbstractCompGraphLayer {
 	}
 
 	public SoftmaxLayer(int in, int out, String name) {
-		super(in, out, name);
+		init(in, out, name);
 	}
 
 	@Override

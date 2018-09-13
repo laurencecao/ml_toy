@@ -42,7 +42,7 @@ public class Tanh implements GateFunction {
 			}
 		});
 		if (!forward) {
-			ret = Utils.gateCorr(ret);
+//			ret = Utils.gateCorr(ret);
 		}
 		return ret;
 	}

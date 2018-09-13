@@ -15,7 +15,7 @@ public class DenseLayer extends AbstractCompGraphLayer {
 	}
 
 	public DenseLayer(int in, int out, String name) {
-		super(in, out, name);
+		init(in, out, name);
 	}
 
 	@Override
