@@ -26,6 +26,14 @@ public class MNIST {
 	protected int label; // label for image
 	protected int[][] image; // matrix for image
 
+	public int getLabel() {
+		return label;
+	}
+
+	public int[][] getImage() {
+		return image;
+	}
+
 	public static List<MNIST> getTraining() {
 		return getObjects(path + "train-images-idx3-ubyte.gz", path + "train-labels-idx1-ubyte.gz");
 	}

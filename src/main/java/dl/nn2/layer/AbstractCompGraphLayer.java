@@ -7,6 +7,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 
 import dl.nn2.activation.GateFunction;
 import dl.nn2.graph.BiasedOp;
+import dl.nn2.graph.Computation;
 import dl.nn2.graph.GateOp;
 import dl.nn2.graph.GroupComputation;
 import dl.nn2.graph.MatrixDataEdge;
@@ -74,13 +75,16 @@ public abstract class AbstractCompGraphLayer {
 			bp = new GroupComputation(name + "_BP", dLdz_mul_dzdy);
 		} else {
 			// dL/dZ * dZ/dy * dy/dz {layer(Z) == layer(y) + 1}
-			bp = new GroupComputation(name, new MulOp(nl.w, true, false, false, name + "_bp"),
-					new BiasedOp(false, name),
-					new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false,
-							"dLdz_mul_dzdy"));
+			bp = new GroupComputation(name, getErrorBackWeight(), new BiasedOp(false, name), new MulVarOp(
+					new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false, "dLdz_mul_dzdy"));
 		}
 		bp.setAttach(this);
 		return Pair.of(ff, bp);
+	}
+
+	protected Computation getErrorBackWeight() {
+		System.out.println("^^^^^^^^^^" + this.getClass().getName());
+		return new MulOp(this.w, true, false, false, name + "_bp");
 	}
 
 	public void updateWeights(MatrixDataEdge nW) {
@@ -126,8 +130,10 @@ public abstract class AbstractCompGraphLayer {
 		String preName = this.getPreLayer() == null ? "" : this.getPreLayer().getClass().getSimpleName();
 		String nextName = this.getNextLayer() == null ? "" : this.getNextLayer().getClass().getSimpleName();
 		String inOut = "";
-		for (int i = 0; i < w.asMat(0).getRowDimension(); i++) {
-			inOut += Arrays.toString(w.asMat(0).getData()[i]) + "\n";
+		if (w != null) {
+			for (int i = 0; i < w.asMat(0).getRowDimension(); i++) {
+				inOut += Arrays.toString(w.asMat(0).getData()[i]) + "\n";
+			}
 		}
 
 		String ret = a;

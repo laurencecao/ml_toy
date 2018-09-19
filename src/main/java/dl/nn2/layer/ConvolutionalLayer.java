@@ -1,13 +1,19 @@
 package dl.nn2.layer;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 
-import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.lang3.tuple.Pair;
 
 import dl.nn2.activation.GateFunction;
-import dl.nn2.graph.MatrixDataEdge;
+import dl.nn2.activation.Tanh;
+import dl.nn2.graph.Computation;
+import dl.nn2.graph.ConvOp;
+import dl.nn2.graph.GateOp;
+import dl.nn2.graph.GroupComputation;
+import dl.nn2.graph.MulVarOp;
+import dl.nn2.graph.Reshape;
+import dl.nn2.graph.VarGateOp;
+import dl.nn2.graph.VarOp;
 import dl.nn2.init.Xavier;
 
 /**
@@ -40,10 +46,11 @@ public class ConvolutionalLayer extends AbstractCompGraphLayer {
 	protected int padding; // padding size, for simplicy using valid
 	protected int pooling; // max pooling size
 
-//	protected Filter filter;
+	protected Reshape reshape;
+	protected ConvOp conv;
 
 	public ConvolutionalLayer(int[] inSize, int kernel, int channel, int filters, int stride, int padding,
-			String name) {
+			int[] reshape, String name) {
 		this.in = inSize;
 		this.out = new int[] { calcOutSize.apply(new Integer[] { inSize[0], kernel, padding, stride }),
 				calcOutSize.apply(new Integer[] { inSize[1], kernel, padding, stride }) };
@@ -52,7 +59,8 @@ public class ConvolutionalLayer extends AbstractCompGraphLayer {
 		this.filterGroup = filters;
 		this.stride = stride;
 		this.padding = padding;
-//		this.filter = new Filter(this.kernel, this.channel, this.filterGroup, initiator);
+		this.conv = new ConvOp(kernel, channel, filters, inSize, out, false);
+		this.reshape = reshape == null ? new Reshape() : new Reshape(reshape);
 		init(inSize[0] * inSize[1], out[0] * out[1], name);
 	}
 
@@ -63,19 +71,39 @@ public class ConvolutionalLayer extends AbstractCompGraphLayer {
 
 	@Override
 	protected GateFunction getActivationFunction() {
-		return null;
+		return new Tanh();
 	}
 
-	public static int calcPaddingSize(int inW, int outW, int kernel, int stride) {
-		double r = ((outW - 1) * stride + kernel - inW) * 1.0d / 2;
-		int ret = Double.valueOf(FastMath.ceil(r)).intValue();
-		return FastMath.max(ret, 0);
+	@Override
+	protected Computation getErrorBackWeight() {
+		return this.conv.rotate();
 	}
 
-	public static void main(String[] args) {
-		int r = calcPaddingSize(3, 4, 3, 1);
-		System.out.println(r);
+	@Override
+	public Pair<GroupComputation, GroupComputation> build() {
+		// default dense layer
+		VarOp var = new VarOp(name + "_Z", name + "_ff_saveZ");
+		GateOp tanh = new GateOp(getActivationFunction(), true, name);
+		GroupComputation ff = new GroupComputation(name + "_FF", conv, var, tanh);
+		ff.setAttach(this);
+
+		MulVarOp dLdz_mul_dzdy = null;
+		GroupComputation bp = null;
+		AbstractCompGraphLayer nl = this.getNextLayer();
+		if (nl == null) {
+			dLdz_mul_dzdy = new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false,
+					"dLdz_mul_dzdy");
+			// dL/dy * dy/dz
+			bp = new GroupComputation(name + "_BP", dLdz_mul_dzdy);
+		} else {
+			// dL/dZ * dZ/dy * dy/dz {layer(Z) == layer(y) + 1}
+			Computation backW = nl.getErrorBackWeight();
+			MulVarOp d_tanh = new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false,
+					"dLdz_mul_dzdy");
+			bp = new GroupComputation(name, backW, d_tanh);
+		}
+		bp.setAttach(this);
+		return Pair.of(ff, bp);
 	}
 
 }
-

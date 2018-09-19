@@ -5,6 +5,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import dl.nn2.activation.GateFunction;
 import dl.nn2.activation.Softmax;
 import dl.nn2.graph.BiasedOp;
+import dl.nn2.graph.Computation;
 import dl.nn2.graph.GateOp;
 import dl.nn2.graph.GroupComputation;
 import dl.nn2.graph.MulOp;
@@ -25,6 +26,11 @@ public class SoftmaxLayer extends AbstractCompGraphLayer {
 	@Override
 	protected String typeName() {
 		return SoftmaxLayer.class.getSimpleName();
+	}
+
+	@Override
+	protected Computation getErrorBackWeight() {
+		return super.getErrorBackWeight();
 	}
 
 	public Pair<GroupComputation, GroupComputation> build() {

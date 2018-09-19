@@ -6,9 +6,22 @@ import org.apache.commons.math3.linear.RealMatrix;
 public class Reshape extends TracedComputation {
 
 	protected int[] outShape;
+	protected boolean dummy = false;
+	protected boolean reverse = false;
+
+	public Reshape() {
+		// dummy reshape
+		this(new int[] { -1, -1 });
+		this.dummy = true;
+	}
 
 	public Reshape(int[] out) {
+		this(out, false);
+	}
+
+	public Reshape(int[] out, boolean reverse) {
 		this.outShape = out;
+		this.reverse = reverse;
 	}
 
 	@Override
@@ -28,11 +41,27 @@ public class Reshape extends TracedComputation {
 
 	@Override
 	protected MatrixDataEdge eval0(MatrixDataEdge data) {
+		if (dummy) {
+			return new MatrixDataEdge("no_reshape", data.asMat(0));
+		}
 		RealMatrix m = data.asMat(0);
-		int c = m.getColumnDimension();
-		int r = m.getRowDimension();
-		int R = outShape[0];
-		int C = outShape[1];
+		MatrixDataEdge ret = null;
+		if (!reverse) {
+			ret = doCalc(data, new int[] { m.getRowDimension(), m.getColumnDimension() },
+					new int[] { outShape[0], outShape[1] });
+		} else {
+			ret = doCalc(data, new int[] { outShape[0], outShape[1] },
+					new int[] { m.getRowDimension(), m.getColumnDimension() });
+		}
+		return ret;
+	}
+
+	protected MatrixDataEdge doCalc(MatrixDataEdge data, int[] in, int[] out) {
+		RealMatrix m = data.asMat(0);
+		int r = in[0];
+		int c = in[1];
+		int R = out[0];
+		int C = out[1];
 		if (R < 0) {
 			double d = 1.0d * c * r / C;
 			R = Double.valueOf(d).intValue();
