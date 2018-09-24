@@ -40,7 +40,7 @@ public class VarOp extends TracedComputation {
 	}
 
 	public MatrixDataEdge getVar() {
-		MatrixDataEdge ret = new MatrixDataEdge("bridge", null);
+		MatrixDataEdge ret = new MatrixDataEdge("bridge");
 		ret.setUpdater(observer);
 		return ret;
 	}

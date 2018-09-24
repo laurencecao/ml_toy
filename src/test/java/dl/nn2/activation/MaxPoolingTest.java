@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import dl.nn2.graph.MatrixDataEdge;
+import dl.nn2.graph.Upsampling;
 
 public class MaxPoolingTest {
 
@@ -22,17 +23,22 @@ public class MaxPoolingTest {
 	public void test() {
 		MaxPooling pool = new MaxPooling(2);
 		RealMatrix m = MatrixUtils
-				.createRealMatrix(new double[][] { { 1, 2, 3, 4 }, { 5, 6, 7, 8 }, { 3, 4, 5, 6 }, { 9, 2, 7, 8 }, });
+				.createRealMatrix(new double[][] { { 1, 2, 3, 4 }, { 5, 6, 7, 8 }, { 3, 4, 5, 6 }, { 9, 2, 7, 4 }, });
 		System.out.println(MatrixDataEdge.pretty0(m));
 		System.out.println("-------------------------");
-		
+
 		RealMatrix mm = pool.forward(m);
 		System.out.println(MatrixDataEdge.pretty0(mm));
+
+		Upsampling up = new Upsampling(2);
+		MatrixDataEdge mm1 = up.eval(new MatrixDataEdge("", mm));
+		System.out.println(MatrixDataEdge.pretty0(mm1.asMat(0)));
 
 		System.out.println("-------------------------");
 
 		mm = pool.backward(m);
 		System.out.println(MatrixDataEdge.pretty0(mm));
+
 	}
 
 }

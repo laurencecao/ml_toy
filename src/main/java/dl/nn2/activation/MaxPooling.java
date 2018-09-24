@@ -6,10 +6,22 @@ import org.apache.commons.math3.util.FastMath;
 
 public class MaxPooling implements GateFunction {
 
+	public final static char WEIGHT = 'w'; // only weights
+
 	protected int poolSize;
+	protected char type;
 
 	public MaxPooling(int pool) {
+		this(pool, 'w');
+	}
+
+	public MaxPooling(int pool, char type) {
 		this.poolSize = pool;
+		this.type = type;
+	}
+
+	public MaxPooling copy(char type) {
+		return new MaxPooling(this.poolSize, type);
 	}
 
 	@Override
@@ -58,7 +70,12 @@ public class MaxPooling implements GateFunction {
 						}
 					}
 				}
-				ret.setEntry(pos[0], pos[1], 1);
+				switch (type) {
+				case 'w':
+					ret.setEntry(pos[0], pos[1], 1);
+				default:
+					break;
+				}
 			}
 		}
 		return ret;

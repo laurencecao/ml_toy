@@ -137,7 +137,7 @@ public class ConvOpTest {
 		System.out.println(MatrixDataEdge.pretty0(r.asMat(0)));
 	}
 
-	@Test
+//	@Test
 	public void test6() {
 		NNModel.resetLogging();
 		NNModel.setLoggingDebugMode(true);
@@ -183,6 +183,27 @@ public class ConvOpTest {
 		MatrixDataEdge dL = new MatrixDataEdge("", MatrixUtils.createRealMatrix(new double[][] { { 1.37294995 } }));
 		ret1 = d_g.eval(dL);
 		System.out.println(MatrixDataEdge.pretty0(ret1.asMat(0)));
+	}
+
+	@Test
+	public void testMultiChannelMultiOut() {
+		Xavier.debug = 0.1d;
+		ConvOp conv = new ConvOp(2, 2, 3, new int[] { 3, 3 }, new int[] { 2, 2 }, false);
+		RealMatrix in1 = MatrixUtils.createRealMatrix(new double[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+		RealMatrix in2 = MatrixUtils.createRealMatrix(new double[][] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } });
+		MatrixDataEdge img = new MatrixDataEdge("image");
+		img.addToMatList(in1);
+		img.addToMatList(in2);
+		MatrixDataEdge r = conv.eval(img);
+		for (RealMatrix dd : r.asMatList()) {
+			System.out.println(MatrixDataEdge.pretty0(dd));
+		}
+
+		ConvOp conv2 = conv.rotate();
+		MatrixDataEdge r2 = conv2.eval(r);
+		for (RealMatrix dd : r2.asMatList()) {
+			System.out.println(MatrixDataEdge.pretty0(dd));
+		}
 	}
 
 }

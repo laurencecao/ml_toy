@@ -1,6 +1,7 @@
 package dl.nn2.graph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,10 +18,8 @@ public class MatrixDataEdge {
 
 	protected String id;
 	protected String name;
-	protected RealMatrix data;
-	protected RealMatrix _data;
-
 	protected List<RealMatrix> dList = new ArrayList<>();
+	protected List<RealMatrix> dListHistory = new ArrayList<>();
 
 	protected Refresher updater;
 
@@ -28,21 +27,32 @@ public class MatrixDataEdge {
 		this.updater = updater;
 	}
 
-	public MatrixDataEdge(String name, RealMatrix data) {
-		this(UUID.randomUUID().toString(), name, data);
-	}
-
 	public void setId(String id) {
 		this.id = id; // caution: for RMSProp Optimizer only
 	}
 
+	public MatrixDataEdge(String name) {
+		this(UUID.randomUUID().toString(), name, new ArrayList<RealMatrix>());
+	}
+
+	public MatrixDataEdge(String name, RealMatrix data) {
+		this(UUID.randomUUID().toString(), name, data);
+	}
+
+	public MatrixDataEdge(String name, MatrixDataEdge data) {
+		this(UUID.randomUUID().toString(), name, data.dList);
+	}
+
 	public MatrixDataEdge(String id, String name, RealMatrix data) {
+		this(id, name, Arrays.asList(data));
+	}
+
+	public MatrixDataEdge(String id, String name, List<RealMatrix> data) {
 		this.name = name;
-		this.data = data;
-		if (data != null) {
-			this._data = data.copy();
-		} else {
-			this._data = null;
+		for (RealMatrix m : data) {
+			if (m != null) {
+				this.dList.add(m.copy());
+			}
 		}
 		this.id = id;
 	}
@@ -56,6 +66,7 @@ public class MatrixDataEdge {
 	}
 
 	public int[] shape() {
+		RealMatrix data = this.dList.get(0);
 		return new int[] { data.getRowDimension(), data.getColumnDimension() };
 	}
 
@@ -70,18 +81,23 @@ public class MatrixDataEdge {
 			}
 		}
 		if (version == 1) {
-			return _data;
+			return this.dListHistory.get(0);
 		}
-		return data;
+		return this.dList.get(0);
 	}
 
 	public List<RealMatrix> asMatList() {
+		if (updater != null) {
+			MatrixDataEdge d = updater.readVar();
+			if (d != null) {
+				update(d);
+			}
+		}
 		return dList;
 	}
 
 	public void addToMatList(RealMatrix m) {
 		this.dList.add(m);
-		this.update(m);
 	}
 
 	public double asDouble(int version) {
@@ -95,42 +111,54 @@ public class MatrixDataEdge {
 			}
 		}
 		if (version == 1) {
-			return _data.getEntry(0, 0);
+			return this.dListHistory.get(0).getEntry(0, 0);
 		}
-		return data.getEntry(0, 0);
+		return this.dList.get(0).getEntry(0, 0);
+	}
+
+	void backup(boolean clearCurrent) {
+		this.dListHistory.clear();
+		if (clearCurrent) {
+			this.dListHistory.addAll(this.dList);
+			this.dList.clear();
+		} else {
+			for (RealMatrix m : this.dList) {
+				this.dListHistory.add(m.copy());
+			}
+		}
 	}
 
 	public void update(RealMatrix data) {
-		this._data = this.data;
-		this.data = data;
+		backup(true);
+		this.dList.add(data.copy());
+	}
+
+	public void update(RealMatrix data, int idx) {
+		backup(false);
+		this.dList.set(idx, data.copy());
 	}
 
 	public void update(MatrixDataEdge data) {
-		if (this.data != null) {
-			this._data = this.data.copy();
-		} else {
-			this._data = null;
-		}
-		if (data.data != null) {
-			this.data = data.data.copy();
-		} else {
-			this.data = null;
-		}
-		if (data.dList != null) {
-			for (RealMatrix d : data.dList) {
-				this.dList.add(d.copy());
-			}
-		} else {
-			this.dList.clear();
+		backup(true);
+		for (RealMatrix m : data.dList) {
+			this.dList.add(m.copy());
 		}
 		// isSameShape(this.data, this._data, this.name);
 	}
 
 	public String pretty() {
-		String msg = "[id=" + id + "   	name=" + name + "]\n";
-		msg += "version_0: \n" + pretty0(data);
-		msg += "version_1: \n" + pretty0(_data);
+		String msg = "[id=" + id + "   	name=" + name + "	size=" + this.dList.size() + "]\n";
+		msg += "version_0: \n" + prettys(this.dList);
+		msg += "version_1: \n" + prettys(this.dListHistory);
 		return msg;
+	}
+
+	static public String prettys(List<RealMatrix> lst) {
+		StringBuilder sb = new StringBuilder();
+		for (RealMatrix m : lst) {
+			sb.append(pretty0(m));
+		}
+		return sb.toString();
 	}
 
 	static public String pretty0(RealMatrix m) {

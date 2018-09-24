@@ -63,26 +63,41 @@ public class ConvOp extends TracedComputation {
 	@Override
 	protected MatrixDataEdge eval0(MatrixDataEdge data) {
 		// 这里比较难看，初期没打算写CNN，所以未考虑multi channel，但是简便起见demo无所谓
-		MatrixDataEdge ret = new MatrixDataEdge("convDD", null);
+		MatrixDataEdge ret = new MatrixDataEdge("convDD");
 		int r, c;
+		List<MatrixDataEdge> result = new ArrayList<>();
 		if (!rotate) {
 			r = outShape[0];
 			c = outShape[1];
+			for (int i = 0; i < filter.group(); i++) {
+				MatrixDataEdge rt = new MatrixDataEdge("convRet", MatrixUtils.createRealMatrix(r, c));
+				result.add(rt);
+			}
 		} else {
 			r = inShape[0];
 			c = inShape[1];
+			for (int i = 0; i < filter.getKernelGroup(0).length; i++) {
+				MatrixDataEdge rt = new MatrixDataEdge("convRet", MatrixUtils.createRealMatrix(r, c));
+				result.add(rt);
+			}
 		}
+
 		for (int i = 0; i < filter.group(); i++) {
-			MatrixDataEdge rt = new MatrixDataEdge("convRet", MatrixUtils.createRealMatrix(r, c));
 			Kernel[] ks = filter.getKernelGroup(i);
 			for (int j = 0; j < ks.length; j++) {
 				if (!rotate) {
-					ks[j].conv(1, data, rt);
+					MatrixDataEdge cur = new MatrixDataEdge("convInput", data.asMatList().get(j));
+					MatrixDataEdge rt = result.get(i);
+					ks[j].conv(1, cur, rt);
 				} else {
-					ks[j].rotateConv(1, data, rt);
+					MatrixDataEdge cur = new MatrixDataEdge("convInput", data.asMatList().get(i));
+					MatrixDataEdge rt = result.get(j);
+					ks[j].rotateConv(1, cur, rt);
 				}
 			}
-			ret.addToMatList(rt.asMat(0));
+		}
+		for (MatrixDataEdge mm : result) {
+			ret.addToMatList(mm.asMat(0));
 		}
 		return ret;
 	}

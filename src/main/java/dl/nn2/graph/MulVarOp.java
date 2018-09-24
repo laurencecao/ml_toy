@@ -22,9 +22,14 @@ public class MulVarOp extends TracedComputation {
 	@Override
 	protected MatrixDataEdge eval0(MatrixDataEdge data) {
 		this.w = comp.eval(null);
-		RealMatrix p = this.transpose ? w.asMat(0).transpose() : w.asMat(0);
-		RealMatrix r = p.multiply(data.asMat(0));
-		return new MatrixDataEdge(type() + "_" + name() + "_" + id(), r);
+		MatrixDataEdge ret = new MatrixDataEdge(type() + "_" + name() + "_" + id());
+		for (int i = 0; i < w.asMatList().size(); i++) {
+			RealMatrix m = w.asMatList().get(i);
+			RealMatrix p = this.transpose ? m.transpose() : m;
+			RealMatrix r = p.multiply(data.asMatList().get(i));
+			ret.addToMatList(r);
+		}
+		return ret;
 	}
 
 	public MatrixDataEdge eval(MatrixDataEdge data) {

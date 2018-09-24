@@ -7,11 +7,15 @@ public class VarGateOp extends GateOp {
 	protected MatrixDataEdge var;
 
 	public VarGateOp(GateFunction g, boolean forward, String memo) {
-		this(g, forward, memo, null);
+		this(g, forward, false, memo, null);
 	}
 
 	public VarGateOp(GateFunction g, boolean forward, String memo, MatrixDataEdge data) {
-		super(g, forward, memo);
+		this(g, forward, false, memo, data);
+	}
+
+	public VarGateOp(GateFunction g, boolean forward, boolean multiChannel, String memo, MatrixDataEdge data) {
+		super(g, forward, multiChannel, memo);
 		this.var = data;
 	}
 

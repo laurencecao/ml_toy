@@ -12,7 +12,6 @@ public class Reshape extends TracedComputation {
 	public Reshape() {
 		// dummy reshape
 		this(new int[] { -1, -1 });
-		this.dummy = true;
 	}
 
 	public Reshape(int[] out) {
@@ -20,6 +19,9 @@ public class Reshape extends TracedComputation {
 	}
 
 	public Reshape(int[] out, boolean reverse) {
+		if ((out == null) || (out[0] == out[1] && out[0] == -1)) {
+			this.dummy = true;
+		}
 		this.outShape = out;
 		this.reverse = reverse;
 	}
@@ -42,16 +44,22 @@ public class Reshape extends TracedComputation {
 	@Override
 	protected MatrixDataEdge eval0(MatrixDataEdge data) {
 		if (dummy) {
-			return new MatrixDataEdge("no_reshape", data.asMat(0));
+			return new MatrixDataEdge("no_reshape", data);
 		}
-		RealMatrix m = data.asMat(0);
-		MatrixDataEdge ret = null;
+		MatrixDataEdge ret = new MatrixDataEdge("reshape");
+		MatrixDataEdge r;
 		if (!reverse) {
-			ret = doCalc(data, new int[] { m.getRowDimension(), m.getColumnDimension() },
-					new int[] { outShape[0], outShape[1] });
+			for (RealMatrix mm : data.asMatList()) {
+				r = doCalc(data, new int[] { mm.getRowDimension(), mm.getColumnDimension() },
+						new int[] { outShape[0], outShape[1] });
+				ret.addToMatList(r.asMat(0));
+			}
 		} else {
-			ret = doCalc(data, new int[] { outShape[0], outShape[1] },
-					new int[] { m.getRowDimension(), m.getColumnDimension() });
+			for (RealMatrix mm : data.asMatList()) {
+				r = doCalc(data, new int[] { outShape[0], outShape[1] },
+						new int[] { mm.getRowDimension(), mm.getColumnDimension() });
+				ret.addToMatList(r.asMat(0));
+			}
 		}
 		return ret;
 	}
