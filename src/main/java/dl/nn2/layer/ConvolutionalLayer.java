@@ -3,6 +3,7 @@ package dl.nn2.layer;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.linear.RealMatrix;
 
 import dl.nn2.activation.GateFunction;
 import dl.nn2.activation.Tanh;
@@ -10,6 +11,7 @@ import dl.nn2.graph.Computation;
 import dl.nn2.graph.ConvOp;
 import dl.nn2.graph.GateOp;
 import dl.nn2.graph.GroupComputation;
+import dl.nn2.graph.MatrixDataEdge;
 import dl.nn2.graph.MulVarOp;
 import dl.nn2.graph.Reshape;
 import dl.nn2.graph.VarGateOp;
@@ -46,11 +48,13 @@ public class ConvolutionalLayer extends AbstractCompGraphLayer {
 	protected int padding; // padding size, for simplicy using valid
 	protected int pooling; // max pooling size
 
+	protected GateFunction gate = new Tanh();
+
 	protected Reshape reshape;
 	protected ConvOp conv;
 
 	public ConvolutionalLayer(int[] inSize, int kernel, int channel, int filters, int stride, int padding,
-			int[] reshape, String name) {
+			Reshape reshape, String name) {
 		this.in = inSize;
 		this.out = new int[] { calcOutSize.apply(new Integer[] { inSize[0], kernel, padding, stride }),
 				calcOutSize.apply(new Integer[] { inSize[1], kernel, padding, stride }) };
@@ -60,7 +64,7 @@ public class ConvolutionalLayer extends AbstractCompGraphLayer {
 		this.stride = stride;
 		this.padding = padding;
 		this.conv = new ConvOp(kernel, channel, filters, inSize, out, false);
-		this.reshape = reshape == null ? new Reshape() : new Reshape(reshape);
+		this.reshape = reshape;
 		init(inSize[0] * inSize[1], out[0] * out[1], name);
 	}
 
@@ -71,7 +75,13 @@ public class ConvolutionalLayer extends AbstractCompGraphLayer {
 
 	@Override
 	protected GateFunction getActivationFunction() {
-		return new Tanh();
+		return gate;
+	}
+
+	public GateFunction setActivationFunction(GateFunction gate) {
+		GateFunction ret = this.gate;
+		this.gate = gate;
+		return ret;
 	}
 
 	@Override
@@ -83,27 +93,39 @@ public class ConvolutionalLayer extends AbstractCompGraphLayer {
 	public Pair<GroupComputation, GroupComputation> build() {
 		// default dense layer
 		VarOp var = new VarOp(name + "_Z", name + "_ff_saveZ");
-		GateOp tanh = new GateOp(getActivationFunction(), true, name);
-		GroupComputation ff = new GroupComputation(name + "_FF", conv, var, tanh);
+		GateOp tanh = new GateOp(getActivationFunction(), true, true, name);
+		GroupComputation ff = new GroupComputation(name + "_FF", conv, var, tanh, reshape);
 		ff.setAttach(this);
 
 		MulVarOp dLdz_mul_dzdy = null;
 		GroupComputation bp = null;
 		AbstractCompGraphLayer nl = this.getNextLayer();
 		if (nl == null) {
-			dLdz_mul_dzdy = new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false,
-					"dLdz_mul_dzdy");
+			dLdz_mul_dzdy = new MulVarOp(new VarGateOp(getActivationFunction(), false, true, "ff_bp", var.getVar()),
+					false, "dLdz_mul_dzdy");
 			// dL/dy * dy/dz
 			bp = new GroupComputation(name + "_BP", dLdz_mul_dzdy);
 		} else {
 			// dL/dZ * dZ/dy * dy/dz {layer(Z) == layer(y) + 1}
 			Computation backW = nl.getErrorBackWeight();
-			MulVarOp d_tanh = new MulVarOp(new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false,
-					"dLdz_mul_dzdy");
+			MulVarOp d_tanh = new MulVarOp(new VarGateOp(getActivationFunction(), false, true, "ff_bp", var.getVar()),
+					false, "dLdz_mul_dzdy");
 			bp = new GroupComputation(name, backW, d_tanh);
 		}
 		bp.setAttach(this);
 		return Pair.of(ff, bp);
+	}
+
+	@Override
+	public void updateWeights(MatrixDataEdge nW) {
+		RealMatrix m = nW.asMatList().get(0);
+		String s = m.getRowDimension() + ", " + m.getColumnDimension();
+		String info = "group = " + nW.asMatList().size() + "; in channel = " + s;
+		System.out.println(info);
+		for (int i = 0; i < nW.asMatList().size(); i++) {
+			m = nW.asMatList().get(i);
+			
+		}
 	}
 
 }

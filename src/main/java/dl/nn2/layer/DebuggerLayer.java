@@ -32,10 +32,10 @@ public class DebuggerLayer extends AbstractCompGraphLayer {
 	 * @param output
 	 * @param loss
 	 */
-	public DebuggerLayer(int[] inShape, List<RealMatrix> output, List<RealMatrix> loss) {
+	public DebuggerLayer(int[] inShape, List<RealMatrix> output, List<RealMatrix> loss, Reshape reshape) {
 		this.output = new MatrixDataEdge(UUID.randomUUID().toString(), "output", output);
 		this.loss = new MatrixDataEdge(UUID.randomUUID().toString(), "loss", loss);
-		this.reshape = new Reshape(new int[] { inShape[0], inShape[1] });
+		this.reshape = reshape;
 		this.comp = init();
 	}
 

@@ -37,6 +37,7 @@ public class PoolingLayer extends AbstractCompGraphLayer {
 
 	@Override
 	protected Computation getErrorBackWeight() {
+		// FIXME
 		return super.getErrorBackWeight();
 	}
 
@@ -44,7 +45,7 @@ public class PoolingLayer extends AbstractCompGraphLayer {
 	public Pair<GroupComputation, GroupComputation> build() {
 		VarOp var = new VarOp(name + "_Z", name + "_ff_saveZ");
 		GroupComputation ff = new GroupComputation(name + "_FF", var, new GateOp(gate, true, true, name),
-				new Reshape(reshape));
+				new Reshape(reshape, false));
 		ff.setAttach(this);
 
 		AbstractCompGraphLayer nl = this.getNextLayer();

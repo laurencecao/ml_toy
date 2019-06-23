@@ -1,5 +1,8 @@
 package dl.nn2.graph;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
@@ -9,12 +12,39 @@ import org.junit.Test;
 
 import dl.nn2.activation.Tanh;
 import dl.nn2.init.Xavier;
+import dl.nn2.layer.DebuggerLayer;
 import dl.nn2.model.NNModel;
 
 public class ConvOpTest {
 
+	DebuggerLayer last;
+	MatrixDataEdge data;
+	MatrixDataEdge lost;
+
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
+		RealMatrix d0 = MatrixUtils.createRealMatrix(new double[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+//		RealMatrix in1 = MatrixUtils.createRealMatrix(new double[][] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } });
+		RealMatrix d1 = MatrixUtils.createRealMatrix(new double[][] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } });
+
+		RealMatrix r0 = MatrixUtils.createRealMatrix(new double[][] { { 0.1167, 0.1833 }, { 0.3167, 0.3833 } });
+		RealMatrix r1 = MatrixUtils.createRealMatrix(new double[][] { { 0.1167, 0.1833 }, { 0.3167, 0.3833 } });
+		RealMatrix r2 = MatrixUtils.createRealMatrix(new double[][] { { 0.1167, 0.1833 }, { 0.3167, 0.3833 } });
+
+		data = new MatrixDataEdge("foobar");
+		data.addToMatList(d0);
+		data.addToMatList(d1);
+
+		List<RealMatrix> dd = new ArrayList<>();
+		dd.add(r0);
+		dd.add(r1);
+		dd.add(r2);
+		last = new DebuggerLayer(new int[] { 2, 2 }, dd, dd, new Reshape());
+
+		lost = new MatrixDataEdge("lost");
+		lost.addToMatList(r0);
+		lost.addToMatList(r1);
+		lost.addToMatList(r2);
 	}
 
 	@After
@@ -118,9 +148,9 @@ public class ConvOpTest {
 
 	// @Test
 	public void test5() {
-		Reshape shape = new Reshape(new int[] { 2, 2 });
-		Reshape shape2 = new Reshape(new int[] { 1, 4 });
-		Reshape shape3 = new Reshape(new int[] { 4, 1 });
+		Reshape shape = new Reshape(new int[] { 2, 2 }, false);
+		Reshape shape2 = new Reshape(new int[] { 1, 4 }, false);
+		Reshape shape3 = new Reshape(new int[] { 4, 1 }, false);
 		MatrixDataEdge d = new MatrixDataEdge("", MatrixUtils.createRealMatrix(new double[][] { { 1, 2, 3, 4 } }));
 		MatrixDataEdge r = shape.eval(d);
 		System.out.println(MatrixDataEdge.pretty0(r.asMat(0)));
@@ -129,10 +159,10 @@ public class ConvOpTest {
 		r = shape3.eval(r);
 		System.out.println(MatrixDataEdge.pretty0(r.asMat(0)));
 
-		Reshape shape4 = new Reshape(new int[] { -1, 4 });
+		Reshape shape4 = new Reshape(new int[] { -1, 4 }, false);
 		r = shape4.eval(r);
 		System.out.println(MatrixDataEdge.pretty0(r.asMat(0)));
-		Reshape shape5 = new Reshape(new int[] { 4, -1 });
+		Reshape shape5 = new Reshape(new int[] { 4, -1 }, false);
 		r = shape5.eval(r);
 		System.out.println(MatrixDataEdge.pretty0(r.asMat(0)));
 	}
@@ -156,7 +186,7 @@ public class ConvOpTest {
 		l2.filter.getKernelGroup(0)[0].w
 				.update(MatrixUtils.createRealMatrix(new double[][] { { .05, .06 }, { .07, .08 }, }));
 		GateOp tanh2 = new GateOp(new Tanh(), true, "L2");
-		Reshape shape = new Reshape(new int[] { -1, 1 });
+		Reshape shape = new Reshape(new int[] { -1, 1 }, false);
 		// BiasedOp biased = new BiasedOp(true, "L2");
 		MatrixDataEdge w = new MatrixDataEdge("", MatrixUtils.createRealMatrix(new double[][] { { 1, 1, 1, 1 }, }));
 		MulOp mul = new MulOp(w, false, false, false, "L3");
@@ -173,7 +203,7 @@ public class ConvOpTest {
 
 		MulVarOp d_tanh2 = new MulVarOp(new VarGateOp(new Tanh(), false, "ff_bp", var2.getVar()), false,
 				"dLdz_mul_dzdy");
-		Reshape d_shape = new Reshape(new int[] { 2, 2 });
+		Reshape d_shape = new Reshape(new int[] { 2, 2 }, false);
 		// BiasedOp biased = new BiasedOp(true, "L2");
 		MulOp d_mul = new MulOp(w, true, false, false, "L3");
 		MulVarOp d_tanh3 = new MulVarOp(new VarGateOp(new Tanh(), false, "ff_bp", var3.getVar()), false,
@@ -186,10 +216,16 @@ public class ConvOpTest {
 	}
 
 	@Test
+	public void testKernelGradient() {
+
+	}
+
+	@Test
 	public void testMultiChannelMultiOut() {
 		Xavier.debug = 0.1d;
 		ConvOp conv = new ConvOp(2, 2, 3, new int[] { 3, 3 }, new int[] { 2, 2 }, false);
 		RealMatrix in1 = MatrixUtils.createRealMatrix(new double[][] { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } });
+//		RealMatrix in1 = MatrixUtils.createRealMatrix(new double[][] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } });
 		RealMatrix in2 = MatrixUtils.createRealMatrix(new double[][] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } });
 		MatrixDataEdge img = new MatrixDataEdge("image");
 		img.addToMatList(in1);
@@ -198,6 +234,8 @@ public class ConvOpTest {
 		for (RealMatrix dd : r.asMatList()) {
 			System.out.println(MatrixDataEdge.pretty0(dd));
 		}
+
+		System.out.println("-----------------------");
 
 		ConvOp conv2 = conv.rotate();
 		MatrixDataEdge r2 = conv2.eval(r);

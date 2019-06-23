@@ -75,7 +75,7 @@ public abstract class AbstractCompGraphLayer {
 			bp = new GroupComputation(name + "_BP", dLdz_mul_dzdy);
 		} else {
 			// dL/dZ * dZ/dy * dy/dz {layer(Z) == layer(y) + 1}
-			bp = new GroupComputation(name, getErrorBackWeight(), new BiasedOp(false, name), new MulVarOp(
+			bp = new GroupComputation(name, nl.getErrorBackWeight(), new BiasedOp(false, name), new MulVarOp(
 					new VarGateOp(getActivationFunction(), false, "ff_bp", var.getVar()), false, "dLdz_mul_dzdy"));
 		}
 		bp.setAttach(this);

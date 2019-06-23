@@ -26,6 +26,7 @@ public class ConvOp extends TracedComputation {
 	protected int[] inShape;
 	protected int[] outShape;
 	protected boolean rotate;
+	protected double[] biased;
 
 	protected Filter filter;
 
@@ -37,6 +38,13 @@ public class ConvOp extends TracedComputation {
 		this.channel = channel;
 		this.group = group;
 		this.filter = new Filter(this.kernel, this.channel, this.group, initiator);
+		if (rotate) {
+			// no biased weight at BP staging
+			this.biased = new double[group];
+		} else {
+			RealMatrix m = initiator.initWeights(1, group);
+			this.biased = m.getColumn(0);
+		}
 	}
 
 	public ConvOp rotate() {
@@ -96,8 +104,10 @@ public class ConvOp extends TracedComputation {
 				}
 			}
 		}
-		for (MatrixDataEdge mm : result) {
-			ret.addToMatList(mm.asMat(0));
+		for (int i = 0; i < result.size(); i++) {
+			MatrixDataEdge mm = result.get(i);
+			RealMatrix m = mm.asMat(0).scalarAdd(biased[i]);
+			ret.addToMatList(m);
 		}
 		return ret;
 	}

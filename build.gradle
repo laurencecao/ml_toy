@@ -1,6 +1,7 @@
 repositories {
+	maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+    maven{ url 'http://maven.aliyun.com/nexus/content/repositories/jcenter'}
     maven { url "http://repo2.maven.org/maven2/" }
-    maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
 //    jcenter()
     maven { url "https://repository-chiralbehaviors.forge.cloudbees.com/snapshot/" }    
     mavenLocal()
@@ -23,6 +24,7 @@ targetCompatibility = 1.8
 dependencies {
     testCompile("junit:junit:4.12")
     testCompile('org.mockito:mockito-all:2.0.2-beta') 
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.25.1'
     compile('log4j:log4j:1.2.17')
     compile('org.slf4j:slf4j-api:1.7.12')
     compile('org.slf4j:slf4j-log4j12:1.7.12')
@@ -44,10 +46,10 @@ dependencies {
 
 	compile group: 'com.github.yannrichet', name: 'JMathPlot', version: '1.0.1'
 	compile group: 'de.erichseifert.gral', name: 'gral-core', version: '0.11'
-    compile group: 'com.mxgraph', name: 'jgraphx', version: '3.7.5'
     compile group: 'org.jfree', name: 'jfreechart', version: '1.5.0'
     compile group: 'cglib', name: 'cglib', version: '3.2.7'
-    
+    compile group: 'com.github.vlsi.mxgraph', name: 'jgraphx', version: '3.9.8.1'
+    compile group: 'com.google.guava', name: 'guava', version: '28.0-jre'
     
     // compile group: 'thinktopic', name: 'tsne-core', version: '0.1.0'
     
@@ -87,10 +89,6 @@ dependencies {
 	
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.0'
-}
-
 eclipse {
     classpath {
        downloadSources=true
@@ -98,6 +96,6 @@ eclipse {
 }
 
 mainClassName = "dl.rbm.RBMPlayer"
-task getHomeDir << {
+task getHomeDir {
 	println gradle.gradleHomeDir
 }

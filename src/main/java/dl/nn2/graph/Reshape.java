@@ -1,5 +1,7 @@
 package dl.nn2.graph;
 
+import java.util.stream.DoubleStream;
+
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 
@@ -7,23 +9,25 @@ public class Reshape extends TracedComputation {
 
 	protected int[] outShape;
 	protected boolean dummy = false;
+	protected boolean merge = false;
 	protected boolean reverse = false;
 
 	public Reshape() {
 		// dummy reshape
-		this(new int[] { -1, -1 });
+		this(new int[] { -1, -1 }, false);
 	}
 
-	public Reshape(int[] out) {
-		this(out, false);
+	public Reshape(int[] out, boolean merge) {
+		this(out, merge, false);
 	}
 
-	public Reshape(int[] out, boolean reverse) {
+	public Reshape(int[] out, boolean merge, boolean reverse) {
 		if ((out == null) || (out[0] == out[1] && out[0] == -1)) {
 			this.dummy = true;
 		}
 		this.outShape = out;
 		this.reverse = reverse;
+		this.merge = merge;
 	}
 
 	@Override
@@ -48,6 +52,21 @@ public class Reshape extends TracedComputation {
 		}
 		MatrixDataEdge ret = new MatrixDataEdge("reshape");
 		MatrixDataEdge r;
+		if (merge) {
+			int rr = data.asMatList().size();
+			int cc = data.asMat(0).getRowDimension() * data.asMat(0).getColumnDimension();
+			RealMatrix dd = MatrixUtils.createRealMatrix(rr, cc);
+			for (int z = 0; z < data.asMatList().size(); z++) {
+				RealMatrix mm = data.asMatList().get(z);
+				DoubleStream all = null;
+				for (int i = 0; i < mm.getRowDimension(); i++) {
+					DoubleStream tmp = DoubleStream.of(mm.getRow(i));
+					all = all == null ? tmp : DoubleStream.concat(all, tmp);
+				}
+				dd.setRow(z, all.toArray());
+			}
+			data = new MatrixDataEdge("reshape_0", dd);
+		}
 		if (!reverse) {
 			for (RealMatrix mm : data.asMatList()) {
 				r = doCalc(data, new int[] { mm.getRowDimension(), mm.getColumnDimension() },

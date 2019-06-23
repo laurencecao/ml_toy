@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import dl.nn2.graph.GroupComputation;
 import dl.nn2.graph.MatrixDataEdge;
+import dl.nn2.graph.Reshape;
 
 public class PoolingLayerTest {
 
@@ -36,7 +37,7 @@ public class PoolingLayerTest {
 		List<RealMatrix> dd = new ArrayList<>();
 		dd.add(MatrixUtils.createRealMatrix(r0));
 		dd.add(MatrixUtils.createRealMatrix(r1));
-		last = new DebuggerLayer(new int[] { 2, 2 }, dd, dd);
+		last = new DebuggerLayer(new int[] { 2, 2 }, dd, dd, new Reshape());
 		layer.setNextLayer(last);
 
 		lost = new MatrixDataEdge("lost");
