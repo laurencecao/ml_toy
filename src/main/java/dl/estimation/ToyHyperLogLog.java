@@ -26,11 +26,6 @@ public class ToyHyperLogLog {
     protected int mask;
     protected double alpha;
 
-    class BucketItem {
-        int bucket;
-        long hashing;
-    }
-
     double computeAlpha() {
         double alpha;
         switch (m) {
